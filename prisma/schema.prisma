@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Placeholder model to prove the Express -> Prisma -> Postgres wiring works.
+// The real domain models (Employee, LeaveType, LeaveBalance, LeaveRequest, ...)
+// come with the feature work, not this scaffold.
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
