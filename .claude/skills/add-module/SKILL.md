@@ -16,7 +16,7 @@ Name the module in kebab-case plural (`leave-types`) and files in singular (`lea
    })
    export type ListLeaveTypesQuery = z.infer<typeof listLeaveTypesQuerySchema>
    ```
-   Date fields use `isoDateSchema` from `common/validators/common.schema.ts`. Cursor and id schemas live there too.
+   Date fields use `isoDateSchema` from `common/validators/common.schema.ts`. `paginationQuerySchema` and id schemas live there too.
 2. **Types (`<name>.types.ts`).** DTOs and domain types. No Prisma model types leak past the service.
 3. **Repository (`<name>.repository.ts`).** An object of functions taking `db: Db` first. All Prisma and raw SQL lives here. Scope predicates (`manager_id = :actor`) are in the query.
    ```ts
@@ -30,11 +30,11 @@ Name the module in kebab-case plural (`leave-types`) and files in singular (`lea
    }
    ```
 4. **Service (`<name>.service.ts`).** Business rules. Use `withTransaction` for multi-step writes and pass `tx` to repositories. Throw `AppError` with a code from `errorCodes.ts`. If the module writes a balance, stop and read the `concurrency-safe-write` skill.
-5. **Controller (`<name>.controller.ts`).** Read `req.user` and validated input, call one service function, respond with `ok(...)` from `common/utils/response.ts`. No rules and no Prisma here.
+5. **Controller (`<name>.controller.ts`).** Read `req.user` and validated input, call one service function, respond with `ok(...)` or `paginated(...)` from `common/utils/response.ts`. No rules and no Prisma here.
 6. **Routes (`<name>.routes.ts`).** Build a router. Add `validate({...})` to every route. Add `requireRole(...)` only for coarse role gates. Relational scope stays in the service and repository.
 7. **Index (`index.ts`).** Export the router and the public service functions only.
 8. **Register** the router in `src/routes/v1/index.ts` **after** the auth middleware (business routes are always versioned). Import everything with `@/` and no extension.
-9. **Manual check** (no automated tests). With `curl` and a cookie jar: the happy path, each validation failure (400 with `issues`), no cookie (401), and for any route touching a request, a cross-team manager (404).
+9. **Manual check** (no automated tests). With `curl` and a cookie jar: the happy path, each validation failure (400 with `details`), no cookie (401), and for any route touching a request, a cross-team manager (404).
 10. **Docs.** Add the module to the tree in `docs/BACKEND-STRUCTURE.md` and the endpoints to the API table in `PHASES.md` Part C.
 
 ## Checklist
@@ -43,5 +43,5 @@ Name the module in kebab-case plural (`leave-types`) and files in singular (`lea
 - [ ] Every repository method takes `db` first.
 - [ ] Every route is validated and reachable only through the authenticated router.
 - [ ] The acting user comes from `req.user`.
-- [ ] Lists are bounded and keyset-paginated.
+- [ ] Lists are bounded and paginated (`page`/`limit`), answered with `paginated()`; everything else with `ok()`.
 - [ ] `pnpm typecheck && pnpm lint && pnpm format:check` pass.

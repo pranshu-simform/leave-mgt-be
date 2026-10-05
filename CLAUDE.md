@@ -51,7 +51,7 @@ Modules: auth, users, teams, leave-types, balances, holidays, leave-requests, ap
 ## Errors and validation
 
 - Throw `AppError(code, status, message, details?)` from `common/errors`. Codes come from `errorCodes.ts`. Never return ad-hoc error bodies.
-- Response shapes: success `{ data, meta? }`, error `{ error: { code, message, issues? } }`.
+- Response shapes (see `docs/API-RESPONSES.md`): success `{ success: true, message?, data }`, paginated `{ success: true, data: [...], pagination }`, error `{ success: false, error: { code, message, details? } }`. Build bodies only with `ok()`, `paginated()` and `fail()` from `common/utils/response.ts`. Never write `res.json({...})` by hand. Action with nothing to return: `ok(null)`, not 204. The request id is the `X-Request-Id` header, never in the body.
 - Statuses: 400 `VALIDATION_ERROR`, 401 `UNAUTHENTICATED` / `TOKEN_EXPIRED`, 403 `FORBIDDEN` / `SELF_APPROVAL_FORBIDDEN`, 404 `NOT_FOUND`, 409 `ALREADY_DECIDED` / `REQUEST_LOCKED` / `OVERLAPPING_REQUEST` / `VERSION_CONFLICT`, 422 `INSUFFICIENT_BALANCE` and rule violations.
 - Every route uses `validate({ body, query, params })` with a schema from the module's `*.schema.ts`. Schema names are `<action><Feature>Schema`, types are `<Action><Feature>Input = z.infer<…>`.
 - Postgres `23P01` (exclusion) and `23514` (check) are mapped to `AppError` in `common/errors/errorHandler.ts`, not in services.
@@ -60,7 +60,7 @@ Modules: auth, users, teams, leave-types, balances, holidays, leave-requests, ap
 
 - Balance writes follow the `concurrency-safe-write` skill. The guard lives in the SQL `WHERE`, and the DB `CHECK` is the backstop.
 - Constraints Prisma cannot express (exclusion, GiST index, triggers, CHECKs) live in hand-edited migration SQL. See the `db-migration` skill.
-- Pagination is keyset (`created_at, id` or `start_date, id`). Default limit 25, max 100.
+- Pagination is `?page=1&limit=25` (1-based, default limit 25, max 100). Use `paginationQuerySchema`, `toSkipTake()` and `buildPagination()`; answer with `paginated(items, pagination)`. Order by a stable key (for example `created_at, id`) so pages do not overlap.
 - Dates: use `common/utils/dates.ts`. Raw SQL returns dates with `to_char(…,'YYYY-MM-DD')`. Do not pass Prisma `Date` objects to the API.
 
 ## Auth

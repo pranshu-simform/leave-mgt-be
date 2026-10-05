@@ -17,5 +17,5 @@ paths:
 - No leave-type-specific branches. If a rule differs by type, it must be a `leave_types` column read by `evaluateLeaveRules`.
 - Cross-module imports go through the other module's `index.ts`.
 - New routers are registered in `src/routes/index.ts` **after** the auth middleware. Do not mount anything before it.
-- Throw `AppError` with a code from `errorCodes.ts`. Do not send error responses by hand.
-- Lists are bounded and keyset-paginated. Never `findMany()` without a `where` and a `take`.
+- Throw `AppError` with a code from `errorCodes.ts`. Do not send error responses by hand. Success bodies come from `ok()` / `paginated()` only.
+- Lists are bounded and paginated (`page`/`limit`, `paginated()`). Never `findMany()` without a `where` and a `take`.
