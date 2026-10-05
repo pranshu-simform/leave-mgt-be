@@ -49,7 +49,7 @@ Start the database and the API first (see the root README). Then set up a cookie
 ```bash
 J=$(mktemp); H='X-Requested-With: XMLHttpRequest'
 curl -s -c $J -H "$H" -H 'Content-Type: application/json' \
-  -d '{"email":"<manager email>","password":"<dev password>"}' localhost:4000/api/auth/login
+  -d '{"email":"<manager email>","password":"<dev password>"}' localhost:4000/api/v1/auth/login
 ```
 
 Run each scenario several times, because a race does not show on every attempt. After each one, check the balance, ledger and events with `psql`:
@@ -65,7 +65,7 @@ For the isolation checks (another team's manager gets 404, self-approval gets 40
 1. **Double-click.** One pending 5-day request `R`. Fire 10 approvals at once:
    ```bash
    seq 10 | xargs -P10 -I{} curl -s -o /dev/null -w '%{http_code}\n' -b $J -H "$H" \
-     -X POST localhost:4000/api/leave-requests/$R/approve | sort | uniq -c
+     -X POST localhost:4000/api/v1/leave-requests/$R/approve | sort | uniq -c
    ```
    Expect one `200` and nine `409`. In `psql`: `used` is 5 (not 50), one ledger `DEDUCT` row, one `APPROVED` event.
 2. **Overcommit.** Allowance 10, two pending 6-day requests `R1` and `R2`. Approve both with two `curl … &` calls and `wait`. Expect one `200` and one `422 INSUFFICIENT_BALANCE`; `used` is 6 and the loser stays `PENDING`.

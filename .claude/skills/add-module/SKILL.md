@@ -33,7 +33,7 @@ Name the module in kebab-case plural (`leave-types`) and files in singular (`lea
 5. **Controller (`<name>.controller.ts`).** Read `req.user` and validated input, call one service function, respond with `ok(...)` from `common/utils/response.ts`. No rules and no Prisma here.
 6. **Routes (`<name>.routes.ts`).** Build a router. Add `validate({...})` to every route. Add `requireRole(...)` only for coarse role gates. Relational scope stays in the service and repository.
 7. **Index (`index.ts`).** Export the router and the public service functions only.
-8. **Register** the router in `src/routes/index.ts` **after** the auth middleware.
+8. **Register** the router in `src/routes/v1/index.ts` **after** the auth middleware (business routes are always versioned). Import everything with `@/` and no extension.
 9. **Manual check** (no automated tests). With `curl` and a cookie jar: the happy path, each validation failure (400 with `issues`), no cookie (401), and for any route touching a request, a cross-team manager (404).
 10. **Docs.** Add the module to the tree in `docs/BACKEND-STRUCTURE.md` and the endpoints to the API table in `PHASES.md` Part C.
 

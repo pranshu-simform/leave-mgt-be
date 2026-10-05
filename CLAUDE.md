@@ -4,12 +4,14 @@ Express 5, TypeScript 7 (strict, ESM, `nodenext`), Prisma 7 with `@prisma/adapte
 
 ## Commands
 
-- `pnpm dev` (tsx watch, loads `.env`), `pnpm build` (tsc), `pnpm start`
-- `pnpm typecheck`, `pnpm lint` (oxlint), `pnpm format` / `pnpm format:check` (oxfmt)
+- `pnpm dev` (tsx watch on `src/server.ts`, loads `.env` if present), `pnpm build` (tsdown, bundles to `dist/server.js`), `pnpm start` (`node dist/server.js`)
+- `pnpm typecheck` (`tsc --noEmit`), `pnpm lint` (oxlint), `pnpm format` / `pnpm format:check` (oxfmt)
 - `pnpm prisma:generate`, `pnpm prisma:migrate` (`migrate dev`)
-- Planned (Phase 0 and 1): `pnpm prisma:seed`, `pnpm prisma:deploy`
+- Planned (Phase 1): `pnpm prisma:seed`, `pnpm prisma:deploy`
 
-## Target structure
+## Structure
+
+Phase 0 is applied. `config/`, `common/errors`, `common/middleware` (error, notFound, requestId), `routes/` and `prisma/client.ts` exist. The rest (validate/auth/csrf middleware, `common/utils`, `common/validators`, `modules/`, `jobs/`) is added by the phase that first needs it, with its own error codes. See `docs/BACKEND-STRUCTURE.md` for what exists.
 
 ```
 src/
@@ -18,14 +20,25 @@ src/
   config/           # env.ts (Zod), database.ts, logger.ts
   common/           # constants, errors, middleware, types, utils, validators
   modules/<name>/   # <name>.{controller,service,repository,routes,schema,types}.ts + index.ts
-  routes/index.ts   # mounts all module routers under /api; auth middleware first
-  prisma/client.ts  # PrismaClient singleton + withTransaction()
+  routes/           # index.ts (/api/health + /api/v1), health.routes.ts, v1/index.ts (module routers, auth first)
+  prisma/client.ts  # PrismaClient singleton (withTransaction() arrives with the first repository)
   jobs/             # cleanup.job.ts, year allocation
 prisma/             # schema.prisma, migrations/, seed.ts
 scripts/            # seed-load.ts (stretch only: 5,000-user query-plan data)
 ```
 
 Modules: auth, users, teams, leave-types, balances, holidays, leave-requests, approvals, calendar. Use the `add-module` skill to create one.
+
+## API versioning
+
+- Business endpoints are `/api/v1/<resource>`, mounted in `routes/v1/index.ts`. Operational endpoints (`/api/health`, `/api/health/ready`) are unversioned and live in `routes/index.ts`.
+- Additive changes (new endpoint, new optional field) stay in `v1`. A breaking change (removed or renamed field, changed meaning) adds `routes/v2/` beside `routes/v1/`, sharing controllers and services where possible.
+- An unknown version falls through to the 404 envelope. Never put business routes outside a versioned router.
+
+## Express 5 notes
+
+- `req.query` is read-only and `req.params` is reset per layer, so the Phase 2 `validate` middleware stores parsed input on `req.validated`. Controllers read `req.validated`, never `req.query` or `req.body` directly.
+- Rejected promises from async handlers reach the error middleware on their own; do not wrap handlers in try/catch just to forward errors.
 
 ## Layering rules
 
@@ -67,5 +80,5 @@ Modules: auth, users, teams, leave-types, balances, holidays, leave-requests, ap
 ## Naming and style
 
 - Folders kebab-case. Files `<singular>.<layer>.ts`, for example `leave-requests/leave-request.service.ts`.
-- ESM imports use the `.js` extension. No `any`. No `console.log` (use the pino logger).
+- Import with the `@/` alias and no extension (`import { env } from '@/config/env'`); same-folder files may use `./Name`. No `any`. No `console.log` (use the pino logger).
 - Run `pnpm format` before committing. Hooks run lint-staged.
