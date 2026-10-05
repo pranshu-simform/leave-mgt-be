@@ -1,15 +1,24 @@
 import type { Prisma } from '@/generated/prisma/client'
-import type { EventAction, LeaveStatus } from '@/generated/prisma/enums'
+import type { EventAction, LeaveStatus, Role } from '@/generated/prisma/enums'
 import { isoToDate } from '@/common/utils/dates'
 import type { Db } from '@/prisma/client'
 
-const withLeaveType = {
-  leaveType: { select: { id: true, code: true, name: true } },
+const withRelations = {
+  leaveType: {
+    select: { id: true, code: true, name: true, drawsFromBalance: true },
+  },
+  user: { select: { id: true, name: true, managerId: true } },
 } as const
 
 export type LeaveRequestRow = Prisma.LeaveRequestGetPayload<{
-  include: typeof withLeaveType
+  include: typeof withRelations
 }>
+
+function approverScope(actor: { id: string; role: Role }): Prisma.UserWhereInput {
+  return actor.role === 'HR_ADMIN'
+    ? { id: { not: actor.id } }
+    : { managerId: actor.id, id: { not: actor.id } }
+}
 
 interface ListFilters {
   userId: string
@@ -57,7 +66,7 @@ export const leaveRequestRepository = {
         startDate: isoToDate(data.startDate),
         endDate: isoToDate(data.endDate),
       },
-      include: withLeaveType,
+      include: withRelations,
     }),
 
   createEvent: (
@@ -68,17 +77,18 @@ export const leaveRequestRepository = {
       action: EventAction
       fromStatus: LeaveStatus | null
       toStatus: LeaveStatus
+      reason?: string
       metadata?: Prisma.InputJsonValue
     },
   ) => db.leaveRequestEvent.create({ data }),
 
   findById: (db: Db, id: string) =>
-    db.leaveRequest.findUnique({ where: { id }, include: withLeaveType }),
+    db.leaveRequest.findUnique({ where: { id }, include: withRelations }),
 
   findOwned: (db: Db, id: string, userId: string) =>
     db.leaveRequest.findFirst({
       where: { id, userId },
-      include: withLeaveType,
+      include: withRelations,
     }),
 
   list: async (db: Db, filters: ListFilters, skip: number, take: number) => {
@@ -86,7 +96,7 @@ export const leaveRequestRepository = {
     const [items, total] = await Promise.all([
       db.leaveRequest.findMany({
         where,
-        include: withLeaveType,
+        include: withRelations,
         orderBy: [{ startDate: 'desc' }, { id: 'asc' }],
         skip,
         take,
@@ -121,6 +131,78 @@ export const leaveRequestRepository = {
   cancelIfPending: async (db: Db, where: { id: string; userId: string }) => {
     const result = await db.leaveRequest.updateMany({
       where: { ...where, status: 'PENDING' },
+      data: { status: 'CANCELLED', version: { increment: 1 } },
+    })
+    return result.count === 1
+  },
+
+  findInApproverScope: (db: Db, id: string, actor: { id: string; role: Role }) =>
+    db.leaveRequest.findFirst({
+      where: { id, user: approverScope(actor) },
+      include: withRelations,
+    }),
+
+  listForApprover: async (
+    db: Db,
+    actor: { id: string; role: Role },
+    status: LeaveStatus,
+    skip: number,
+    take: number,
+  ) => {
+    const where: Prisma.LeaveRequestWhereInput = {
+      status,
+      user: approverScope(actor),
+    }
+    const [items, total] = await Promise.all([
+      db.leaveRequest.findMany({
+        where,
+        include: withRelations,
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        skip,
+        take,
+      }),
+      db.leaveRequest.count({ where }),
+    ])
+    return { items, total }
+  },
+
+  decideIfPending: async (
+    db: Db,
+    id: string,
+    actor: { id: string; role: Role },
+    status: 'APPROVED' | 'REJECTED',
+  ) => {
+    const result = await db.leaveRequest.updateMany({
+      where: { id, status: 'PENDING', user: approverScope(actor) },
+      data: {
+        status,
+        decidedBy: actor.id,
+        decidedAt: new Date(),
+        version: { increment: 1 },
+      },
+    })
+    return result.count === 1
+  },
+
+  autoApproveIfPending: async (db: Db, id: string) => {
+    const result = await db.leaveRequest.updateMany({
+      where: { id, status: 'PENDING' },
+      data: {
+        status: 'APPROVED',
+        decidedAt: new Date(),
+        version: { increment: 1 },
+      },
+    })
+    return result.count === 1
+  },
+
+  cancelIfApproved: async (db: Db, where: { id: string; userId: string }, today: string) => {
+    const result = await db.leaveRequest.updateMany({
+      where: {
+        ...where,
+        status: 'APPROVED',
+        startDate: { gte: isoToDate(today) },
+      },
       data: { status: 'CANCELLED', version: { increment: 1 } },
     })
     return result.count === 1

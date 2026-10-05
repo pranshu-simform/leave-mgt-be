@@ -1,2 +1,8 @@
 export { balanceRouter } from '@/modules/balances/balance.routes'
-export { allocateYear, findBalance, getBalances } from '@/modules/balances/balance.service'
+export {
+  allocateYear,
+  deductBalance,
+  findBalance,
+  getBalances,
+  refundBalance,
+} from '@/modules/balances/balance.service'

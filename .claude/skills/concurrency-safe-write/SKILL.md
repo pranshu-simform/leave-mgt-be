@@ -9,36 +9,42 @@ The brief's hardest case: two approvals at the same instant must not both succee
 
 ## The pattern: guard in the `WHERE`, not in an `if`
 
-Never read a row, check it in JS, then write. Put the condition in the `UPDATE` and look at the row count.
+Never read a row, check it in JS, then write. Put the condition in the `UPDATE` and look at the row count. The real code is `leave-requests/commit-approval.ts` and the guarded statements in `leave-request.repository.ts` and `balance.repository.ts`.
 
 ```ts
-// 1. state guard + scope + self-approval, in one statement
-const rows = await db.$queryRaw<Row[]>`
-  UPDATE leave_requests SET status = 'APPROVED', decided_by = ${actorId}, decided_at = now(), version = version + 1
-  WHERE id = ${id} AND status = 'PENDING' AND user_id <> ${actorId}
-    AND user_id IN (SELECT id FROM users WHERE manager_id = ${actorId})
-  RETURNING id, user_id, leave_type_id, days`
-if (rows.length === 0) throw await explainNoMatch(db, id, actorId) // 404 vs ALREADY_DECIDED
+// 1. state guard + scope + self-approval, in one statement (leave-request.repository.ts)
+const result = await db.leaveRequest.updateMany({
+  where: { id, status: 'PENDING', user: approverScope(actor) }, // scope: managerId = actor (HR: anyone), never the actor
+  data: {
+    status: 'APPROVED',
+    decidedBy: actor.id,
+    decidedAt: new Date(),
+    version: { increment: 1 },
+  },
+})
+if (result.count !== 1) await explainDecisionMiss(db, id, actor) // 403 own request, 404 out of scope, 409 ALREADY_DECIDED
 
-// 2. balance guard (same transaction)
-const bal = await db.$queryRaw<Bal[]>`
-  UPDATE leave_balances SET used = used + ${days}
-  WHERE user_id = ${userId} AND leave_type_id = ${typeId} AND year = ${year} AND used + ${days} <= allowance
+// 2. balance guard, same transaction (balance.repository.ts, called through deductBalance)
+const rows = await db.$queryRaw<{ id: string }[]>`
+  UPDATE leave_balances SET used = used + ${days}::int
+  WHERE user_id = ${userId}::uuid AND leave_type_id = ${typeId}::uuid AND year = ${year}::int
+    AND used + ${days}::int <= allowance
   RETURNING id`
-if (bal.length === 0) throw new AppError('INSUFFICIENT_BALANCE', 422, 'Not enough balance') // rolls back step 1
+if (rows.length === 0) throw new AppError('INSUFFICIENT_BALANCE', 422, '…') // rolls back step 1
 ```
 
-Then, in the same transaction, insert the `leave_balance_ledger` row and the `leave_request_events` row.
+Then, in the same transaction, `deductBalance` writes the `leave_balance_ledger` row and `commitApproval` writes the `leave_request_events` row.
 
 ## Why it holds
 
 - A row `UPDATE` takes a lock. A concurrent `UPDATE` waits, then re-evaluates its `WHERE` against the committed row (READ COMMITTED). The second approver sees `status = 'APPROVED'` and affects 0 rows.
-- Lock order is always request row, then balance row, so two transactions cannot deadlock on each other. Wrap in a retry for `40001` and `40P01` anyway.
-- The DB `CHECK (used BETWEEN 0 AND allowance)` is the backstop if a bug slips past the `WHERE`.
+- The status guard and the balance guard do different jobs. The status guard stops one request being decided twice; the balance guard stops different requests overspending the same balance. `docs/DECISIONS.md` shows that removing only the balance guard still passes the double-click test and fails the others.
+- Lock order is always request row, then balance row, so two transactions cannot deadlock on each other. That is why there is no `40001`/`40P01` retry wrapper; add one only if a manual run ever shows such an error.
+- The DB `CHECK (used BETWEEN 0 AND allowance)` is a backstop for a bug that overshoots. It cannot catch a silent lost update, so also compare `used` with the ledger (below).
 
 ## Rules
 
-- All balance changes go through `commitApproval()`, `refund()` or `adjust()`, each writing a ledger row. Never `UPDATE leave_balances` anywhere else.
+- All balance changes go through `deductBalance()` (called by `commitApproval()`), `refundBalance()` and, later, `adjust()`, each writing a ledger row. Never `UPDATE leave_balances` anywhere else.
 - Use the stored `days` snapshot on the request for deduction and refund. Never recompute from holidays.
 - Do not use `SELECT … FOR UPDATE` followed by JS checks as a substitute. If you need a lock, take it in a consistent order and still guard in the `WHERE`.
 
@@ -72,6 +78,7 @@ For the isolation checks (another team's manager gets 404, self-approval gets 40
 3. **Two approvers.** Manager and HR approve the same request at once (two cookie jars). One `200`, one `409`.
 4. **Approve vs cancel.** Fire both on one pending request. The final `used` is 0 (cancelled) or `days` (approved) and matches the status.
 5. **Stress.** 50 pending one-day requests, allowance 10, approve all with `xargs -P20`. Exactly 10 succeed and `used = 10`.
+6. **Auto-approve boundary.** 15 parallel submits of a leave type with `requires_approval = false` against an allowance of 10. Exactly 10 are created `APPROVED` (201), five get `422`, and the failed submits leave no row.
 
 ## Show the check can fail
 
@@ -80,3 +87,14 @@ For the isolation checks (another team's manager gets 404, self-approval gets 40
 3. Revert the scratch change. Record what you saw in `docs/DECISIONS.md`.
 
 Without this step you cannot tell a passing check from one that never raced.
+
+After every scenario, also check that the ledger agrees with the balance: for each balance, `used` must equal `-sum(delta)` over the `DEDUCT` and `REFUND` rows, and `0 <= used <= allowance`.
+
+```sql
+SELECT count(*) FILTER (WHERE b.used <> -coalesce(l.s, 0)) AS mismatches
+FROM leave_balances b
+LEFT JOIN (SELECT balance_id, sum(delta) FILTER (WHERE reason IN ('DEDUCT','REFUND')) s
+           FROM leave_balance_ledger GROUP BY balance_id) l ON l.balance_id = b.id;
+```
+
+Tests that create requests must run against a scratch database (create it, run `prisma migrate deploy` and the seed with `DATABASE_URL` pointing at it, drop it afterwards): events and ledger rows are append-only, so the dev database cannot be cleaned.

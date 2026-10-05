@@ -22,12 +22,17 @@ enum LeaveStatus {
 
 enum EventAction {
   SUBMITTED
+  AUTO_APPROVED
+  APPROVED
+  REJECTED
   EDITED
   CANCELLED
 }
 
 enum LedgerReason {
   ALLOCATION
+  DEDUCT
+  REFUND
 }
 
 model User {
@@ -40,11 +45,18 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  refreshTokens RefreshToken[]
-  balances      LeaveBalance[]
-  leaveRequests LeaveRequest[]
-  requestEvents LeaveRequestEvent[]
+  managerId String? @map("manager_id") @db.Uuid
 
+  manager         User?                @relation("ManagerReports", fields: [managerId], references: [id])
+  reports         User[]               @relation("ManagerReports")
+  decidedRequests LeaveRequest[]       @relation("RequestDecider")
+  ledgerEntries   LeaveBalanceLedger[]
+  refreshTokens   RefreshToken[]
+  balances        LeaveBalance[]
+  leaveRequests   LeaveRequest[]       @relation("RequestOwner")
+  requestEvents   LeaveRequestEvent[]
+
+  @@index([managerId])
   @@map("users")
 }
 
@@ -76,6 +88,7 @@ model LeaveType {
   minNoticeDays        Int      @default(0) @map("min_notice_days")
   maxConsecutiveDays   Int?     @map("max_consecutive_days")
   requiresNote         Boolean  @default(false) @map("requires_note")
+  requiresApproval     Boolean  @default(true) @map("requires_approval")
   isActive             Boolean  @default(true) @map("is_active")
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -117,9 +130,13 @@ model LeaveBalanceLedger {
   balanceId String       @map("balance_id") @db.Uuid
   delta     Int
   reason    LedgerReason
+  requestId String?      @map("request_id") @db.Uuid
+  actorId   String?      @map("actor_id") @db.Uuid
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  balance LeaveBalance @relation(fields: [balanceId], references: [id])
+  balance LeaveBalance  @relation(fields: [balanceId], references: [id])
+  request LeaveRequest? @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  actor   User?         @relation(fields: [actorId], references: [id], onDelete: Restrict)
 
   @@map("leave_balance_ledger")
 }
@@ -134,14 +151,19 @@ model LeaveRequest {
   note        String?
   status      LeaveStatus @default(PENDING)
   version     Int         @default(1)
+  decidedBy   String?     @map("decided_by") @db.Uuid
+  decidedAt   DateTime?   @map("decided_at") @db.Timestamptz(3)
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user      User                @relation(fields: [userId], references: [id])
-  leaveType LeaveType           @relation(fields: [leaveTypeId], references: [id])
+  user      User                 @relation("RequestOwner", fields: [userId], references: [id])
+  decider   User?                @relation("RequestDecider", fields: [decidedBy], references: [id])
+  leaveType LeaveType            @relation(fields: [leaveTypeId], references: [id])
   events    LeaveRequestEvent[]
+  ledger    LeaveBalanceLedger[]
 
   @@index([userId, startDate])
+  @@index([status, createdAt, id])
   @@map("leave_requests")
 }
 
@@ -152,6 +174,7 @@ model LeaveRequestEvent {
   action     EventAction
   fromStatus LeaveStatus? @map("from_status")
   toStatus   LeaveStatus  @map("to_status")
+  reason     String?
   metadata   Json?
   createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
 
