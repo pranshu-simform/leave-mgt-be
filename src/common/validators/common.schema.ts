@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isValidIsoDate } from '@/common/utils/dates'
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '@/common/utils/pagination'
 
 export const paginationQuerySchema = z.object({
@@ -7,6 +8,10 @@ export const paginationQuerySchema = z.object({
 })
 
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>
+
+export const isoDateSchema = z
+  .string('Date is required')
+  .refine(isValidIsoDate, 'Enter a valid date (YYYY-MM-DD)')
 
 export const idParamSchema = z.object({ id: z.uuid('Invalid id') })
 

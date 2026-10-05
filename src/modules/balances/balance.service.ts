@@ -10,8 +10,15 @@ export function allocateYear(year: number): Promise<number> {
   return balanceRepository.allocateYear(prisma, year)
 }
 
+export function findBalance(userId: string, leaveTypeId: string, year: number) {
+  return balanceRepository.findOne(prisma, userId, leaveTypeId, year)
+}
+
 export async function getBalances(userId: string, year: number): Promise<BalanceDto[]> {
-  const rows = await balanceRepository.findByUserAndYear(prisma, userId, year)
+  const [rows, pending] = await Promise.all([
+    balanceRepository.findByUserAndYear(prisma, userId, year),
+    balanceRepository.pendingDaysByType(prisma, userId, year),
+  ])
   return rows.map((row) => ({
     leaveTypeId: row.leaveType.id,
     code: row.leaveType.code,
@@ -20,6 +27,7 @@ export async function getBalances(userId: string, year: number): Promise<Balance
     allowance: row.allowance,
     used: row.used,
     remaining: row.allowance - row.used,
+    pendingDays: pending.get(row.leaveTypeId) ?? 0,
   }))
 }
 

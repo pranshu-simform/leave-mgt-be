@@ -29,7 +29,7 @@ ALTER TABLE leave_requests ADD CONSTRAINT leave_requests_no_overlap
 
 -- value invariants
 ALTER TABLE leave_requests ADD CONSTRAINT leave_requests_dates_ck CHECK (start_date <= end_date AND days > 0);
-ALTER TABLE leave_balances ADD CONSTRAINT leave_balances_used_ck CHECK (used >= 0 AND used <= allowance);
+ALTER TABLE leave_balances ADD CONSTRAINT leave_balances_amounts_ck CHECK (allowance >= 0 AND used >= 0 AND used <= allowance);
 
 -- range lookup for overlap and calendar queries
 CREATE INDEX leave_requests_active_range_gist ON leave_requests
@@ -42,7 +42,7 @@ CREATE TRIGGER leave_request_events_append_only
   BEFORE UPDATE OR DELETE ON leave_request_events FOR EACH ROW EXECUTE FUNCTION forbid_mutation();
 ```
 
-Map violations in `common/errors/errorHandler.ts`: `23P01` → `OVERLAPPING_REQUEST` (409), `23514` → the matching rule code (422).
+Map violations in `common/errors/errorHandler.ts` (today: `23P01` on `leave_requests_no_overlap` → `OVERLAPPING_REQUEST`, 409). Prisma delivers them as `P2039` with the Postgres code and message under `meta.driverAdapterError.cause`; trigger a real violation and inspect the error before writing a new mapping.
 
 ## Rules
 

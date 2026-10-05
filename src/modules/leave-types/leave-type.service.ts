@@ -2,6 +2,10 @@ import { prisma } from '@/prisma/client'
 import { leaveTypeRepository } from '@/modules/leave-types/leave-type.repository'
 import type { LeaveTypeDto } from '@/modules/leave-types/leave-type.types'
 
+export function getActiveLeaveType(id: string) {
+  return leaveTypeRepository.findActiveById(prisma, id)
+}
+
 export async function listLeaveTypes(): Promise<LeaveTypeDto[]> {
   const types = await leaveTypeRepository.findActive(prisma)
   return types.map((type) => ({

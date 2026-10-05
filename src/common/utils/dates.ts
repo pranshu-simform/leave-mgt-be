@@ -19,6 +19,23 @@ function parseIsoDate(iso: string): UTCDate {
   return date
 }
 
+export function isoToDate(iso: string): Date {
+  return new Date(parseIsoDate(iso).getTime())
+}
+
+export function dateToIso(date: Date): string {
+  return format(new UTCDate(date), ISO_FORMAT)
+}
+
+export function isValidIsoDate(iso: string): boolean {
+  try {
+    parseIsoDate(iso)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function todayIso(): string {
   return format(new UTCDate(), ISO_FORMAT)
 }

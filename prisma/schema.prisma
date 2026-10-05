@@ -13,6 +13,19 @@ enum Role {
   HR_ADMIN
 }
 
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum EventAction {
+  SUBMITTED
+  EDITED
+  CANCELLED
+}
+
 enum LedgerReason {
   ALLOCATION
 }
@@ -29,20 +42,22 @@ model User {
 
   refreshTokens RefreshToken[]
   balances      LeaveBalance[]
+  leaveRequests LeaveRequest[]
+  requestEvents LeaveRequestEvent[]
 
   @@map("users")
 }
 
 model RefreshToken {
-  id           String    @id @default(uuid(7)) @db.Uuid
-  userId       String    @map("user_id") @db.Uuid
-  tokenHash    String    @unique @map("token_hash")
-  familyId     String    @map("family_id") @db.Uuid
-  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
-  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
-  userAgent    String?   @map("user_agent")
-  ip           String?
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  familyId  String    @map("family_id") @db.Uuid
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  userAgent String?   @map("user_agent")
+  ip        String?
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -66,6 +81,7 @@ model LeaveType {
   updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   balances LeaveBalance[]
+  requests LeaveRequest[]
 
   @@map("leave_types")
 }
@@ -106,4 +122,41 @@ model LeaveBalanceLedger {
   balance LeaveBalance @relation(fields: [balanceId], references: [id])
 
   @@map("leave_balance_ledger")
+}
+
+model LeaveRequest {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  userId      String      @map("user_id") @db.Uuid
+  leaveTypeId String      @map("leave_type_id") @db.Uuid
+  startDate   DateTime    @map("start_date") @db.Date
+  endDate     DateTime    @map("end_date") @db.Date
+  days        Int
+  note        String?
+  status      LeaveStatus @default(PENDING)
+  version     Int         @default(1)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user      User                @relation(fields: [userId], references: [id])
+  leaveType LeaveType           @relation(fields: [leaveTypeId], references: [id])
+  events    LeaveRequestEvent[]
+
+  @@index([userId, startDate])
+  @@map("leave_requests")
+}
+
+model LeaveRequestEvent {
+  id         String       @id @default(uuid(7)) @db.Uuid
+  requestId  String       @map("request_id") @db.Uuid
+  actorId    String       @map("actor_id") @db.Uuid
+  action     EventAction
+  fromStatus LeaveStatus? @map("from_status")
+  toStatus   LeaveStatus  @map("to_status")
+  metadata   Json?
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  request LeaveRequest @relation(fields: [requestId], references: [id])
+  actor   User         @relation(fields: [actorId], references: [id])
+
+  @@map("leave_request_events")
 }
