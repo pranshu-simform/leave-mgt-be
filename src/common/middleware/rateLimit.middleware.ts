@@ -7,8 +7,6 @@ export function createRateLimiter(limit: number, skipHealth = false) {
   return rateLimit({
     windowMs: RATE_LIMIT_WINDOW_MS,
     limit,
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
     skip: skipHealth ? (req) => req.path.startsWith('/health') : undefined,
     handler: (_req, _res, next) => {
       next(new AppError(ERROR_CODES.RATE_LIMITED, 429, 'Too many requests, try again later'))
