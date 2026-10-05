@@ -18,4 +18,4 @@ paths:
 - Cross-module imports go through the other module's `index.ts`.
 - New routers are registered in `src/routes/v1/index.ts` **after** `authenticate`. Do not mount anything before it.
 - Throw `AppError` with a code from `errorCodes.ts`. Do not send error responses by hand. Success bodies come from `ok()` / `paginated()` only.
-- Lists are bounded and paginated (`page`/`limit`, `paginated()`). Never `findMany()` without a `where` and a `take`.
+- Lists are bounded and paginated (`page`/`limit`, `paginated()`). Never `findMany()` without a `where` and a `take`. A reference list that is tiny by nature (leave types, one balance per type) may skip pagination but keeps a fixed `take` cap and answers with `ok(items)`.

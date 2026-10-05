@@ -11,7 +11,7 @@ Express 5, TypeScript 7 (strict, ESM, `nodenext`), Prisma 7 with `@prisma/adapte
 
 ## Structure
 
-Phases 0 and 2 are applied. `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth` and `users` modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
+Phases 0, 2 and 3 are applied. `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types` and `balances` modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
 
 ```
 src/
@@ -62,7 +62,7 @@ Modules: auth, users, teams, leave-types, balances, holidays, leave-requests, ap
 - **Tables arrive with their feature.** A phase's migration creates only the tables, columns and constraints that phase uses. Do not add a model early.
 - Constraints Prisma cannot express (exclusion, GiST index, triggers, CHECKs) live in hand-edited migration SQL. See the `db-migration` skill.
 - Pagination is `?page=1&limit=25` (1-based, default limit 25, max 100). Use `paginationQuerySchema`, `toSkipTake()` and `buildPagination()`; answer with `paginated(items, pagination)`. Order by a stable key (for example `created_at, id`) so pages do not overlap.
-- Dates: use `common/utils/dates.ts`. Raw SQL returns dates with `to_char(…,'YYYY-MM-DD')`. Do not pass Prisma `Date` objects to the API.
+- Dates: use `common/utils/dates.ts` (date-fns on a `UTCDate`, strings in and out; an invalid date throws). Do not hand-roll date math. "Today" is the server's UTC date. Raw SQL returns dates with `to_char(…,'YYYY-MM-DD')`. Do not pass Prisma `Date` objects to the API.
 
 ## Auth
 

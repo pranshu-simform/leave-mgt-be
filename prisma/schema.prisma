@@ -13,6 +13,10 @@ enum Role {
   HR_ADMIN
 }
 
+enum LedgerReason {
+  ALLOCATION
+}
+
 model User {
   id           String   @id @default(uuid(7)) @db.Uuid
   email        String   @unique
@@ -24,6 +28,7 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   refreshTokens RefreshToken[]
+  balances      LeaveBalance[]
 
   @@map("users")
 }
@@ -44,4 +49,61 @@ model RefreshToken {
   @@index([userId])
   @@index([familyId])
   @@map("refresh_tokens")
+}
+
+model LeaveType {
+  id                   String   @id @default(uuid(7)) @db.Uuid
+  code                 String   @unique
+  name                 String
+  drawsFromBalance     Boolean  @map("draws_from_balance")
+  defaultAllowanceDays Int      @map("default_allowance_days")
+  allowRetroactive     Boolean  @default(false) @map("allow_retroactive")
+  minNoticeDays        Int      @default(0) @map("min_notice_days")
+  maxConsecutiveDays   Int?     @map("max_consecutive_days")
+  requiresNote         Boolean  @default(false) @map("requires_note")
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  balances LeaveBalance[]
+
+  @@map("leave_types")
+}
+
+model PublicHoliday {
+  id   String   @id @default(uuid(7)) @db.Uuid
+  date DateTime @unique @db.Date
+  name String
+
+  @@map("public_holidays")
+}
+
+model LeaveBalance {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  leaveTypeId String   @map("leave_type_id") @db.Uuid
+  year        Int
+  allowance   Int
+  used        Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user      User                 @relation(fields: [userId], references: [id])
+  leaveType LeaveType            @relation(fields: [leaveTypeId], references: [id])
+  ledger    LeaveBalanceLedger[]
+
+  @@unique([userId, leaveTypeId, year])
+  @@map("leave_balances")
+}
+
+model LeaveBalanceLedger {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  balanceId String       @map("balance_id") @db.Uuid
+  delta     Int
+  reason    LedgerReason
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  balance LeaveBalance @relation(fields: [balanceId], references: [id])
+
+  @@map("leave_balance_ledger")
 }
