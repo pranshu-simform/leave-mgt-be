@@ -25,5 +25,5 @@
     "esModuleInterop": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "tsdown.config.ts"]
+  "include": ["src", "prisma/seed.ts", "tsdown.config.ts"]
 }

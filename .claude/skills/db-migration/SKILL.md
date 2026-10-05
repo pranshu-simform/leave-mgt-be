@@ -7,6 +7,8 @@ description: Change the Prisma schema and create a migration, including hand-wri
 
 ## Steps
 
+One migration per feature: add only the tables, columns, indexes and constraints the phase you are building uses. Hand-written SQL belongs to the phase that needs it (for example the exclusion constraint arrives with `leave_requests`).
+
 1. Edit `prisma/schema.prisma`. Dates are `@db.Date`, day counts are `Int`, statuses and roles are enums. Name columns with `@map` to snake_case and tables with `@@map`.
 2. Create the migration without applying it: `pnpm prisma migrate dev --create-only --name <short_snake_name>`.
 3. Open the new `prisma/migrations/<timestamp>_<name>/migration.sql` and **append** hand-written SQL for anything Prisma cannot express (below).

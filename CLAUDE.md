@@ -7,11 +7,11 @@ Express 5, TypeScript 7 (strict, ESM, `nodenext`), Prisma 7 with `@prisma/adapte
 - `pnpm dev` (tsx watch on `src/server.ts`, loads `.env` if present), `pnpm build` (tsdown, bundles to `dist/server.js`), `pnpm start` (`node dist/server.js`)
 - `pnpm typecheck` (`tsc --noEmit`), `pnpm lint` (oxlint), `pnpm format` / `pnpm format:check` (oxfmt)
 - `pnpm prisma:generate`, `pnpm prisma:migrate` (`migrate dev`)
-- Planned (Phase 1): `pnpm prisma:seed`, `pnpm prisma:deploy`
+- `pnpm prisma:seed` (idempotent upserts; every seeded account shares the dev password in `prisma/seed.ts`), `pnpm prisma:deploy` (`migrate deploy`)
 
 ## Structure
 
-Phase 0 is applied. `config/`, `common/errors`, `common/middleware` (error, notFound, requestId), `routes/` and `prisma/client.ts` exist. The rest (validate/auth/csrf middleware, `common/utils`, `common/validators`, `modules/`, `jobs/`) is added by the phase that first needs it, with its own error codes. See `docs/BACKEND-STRUCTURE.md` for what exists.
+Phases 0 and 2 are applied. `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth` and `users` modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
 
 ```
 src/
@@ -37,7 +37,7 @@ Modules: auth, users, teams, leave-types, balances, holidays, leave-requests, ap
 
 ## Express 5 notes
 
-- `req.query` is read-only and `req.params` is reset per layer, so the Phase 2 `validate` middleware stores parsed input on `req.validated`. Controllers read `req.validated`, never `req.query` or `req.body` directly.
+- `req.query` is read-only and `req.params` is reset per layer, so the `validate` middleware stores parsed input on `req.validated`. Controllers read `req.validated` (cast to the schema's `…Input` type), never `req.query` or `req.body` directly.
 - Rejected promises from async handlers reach the error middleware on their own; do not wrap handlers in try/catch just to forward errors.
 
 ## Layering rules
@@ -59,14 +59,15 @@ Modules: auth, users, teams, leave-types, balances, holidays, leave-requests, ap
 ## Data rules
 
 - Balance writes follow the `concurrency-safe-write` skill. The guard lives in the SQL `WHERE`, and the DB `CHECK` is the backstop.
+- **Tables arrive with their feature.** A phase's migration creates only the tables, columns and constraints that phase uses. Do not add a model early.
 - Constraints Prisma cannot express (exclusion, GiST index, triggers, CHECKs) live in hand-edited migration SQL. See the `db-migration` skill.
 - Pagination is `?page=1&limit=25` (1-based, default limit 25, max 100). Use `paginationQuerySchema`, `toSkipTake()` and `buildPagination()`; answer with `paginated(items, pagination)`. Order by a stable key (for example `created_at, id`) so pages do not overlap.
 - Dates: use `common/utils/dates.ts`. Raw SQL returns dates with `to_char(…,'YYYY-MM-DD')`. Do not pass Prisma `Date` objects to the API.
 
 ## Auth
 
-- `access_token` (15 min JWT, `jose`) and `refresh_token` (opaque, SHA-256 hashed in the DB, rotated, reuse revokes the family) are httpOnly cookies. A Bearer header is accepted as a fallback for `curl`.
-- `authenticate` loads the user per request to honor `is_active` and role changes. It is mounted once in `routes/index.ts`.
+- `access_token` (15 min HS256 JWT, `jsonwebtoken`) and `refresh_token` (opaque, SHA-256 hashed in the DB, rotated, reuse revokes the family) are httpOnly cookies. A Bearer header is accepted as a fallback for `curl`.
+- `authenticate` loads the user per request to honor `is_active` and role changes. It is mounted once in `routes/v1/index.ts`; register new module routers below it.
 - Passwords use `bcryptjs`. Never log tokens, hashes or passwords.
 
 ## Verification (no automated tests)

@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '@/generated/prisma/client'
+import { Prisma, PrismaClient } from '@/generated/prisma/client'
 import { poolConfig } from '@/config/database'
 import { env } from '@/config/env'
 
@@ -16,4 +16,10 @@ export const prisma = globalThis.prismaClient ?? createClient()
 
 if (env.NODE_ENV !== 'production') {
   globalThis.prismaClient = prisma
+}
+
+export type Db = Prisma.TransactionClient | PrismaClient
+
+export function withTransaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  return prisma.$transaction(fn)
 }

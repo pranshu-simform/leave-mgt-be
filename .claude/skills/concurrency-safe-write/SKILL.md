@@ -47,8 +47,8 @@ Then, in the same transaction, insert the `leave_balance_ledger` row and the `le
 Start the database and the API first (see the root README). Then set up a cookie jar for the approver and the required header, and log in as the employee's manager (seeded accounts are in the README):
 
 ```bash
-J=$(mktemp); H='X-Requested-With: XMLHttpRequest'
-curl -s -c $J -H "$H" -H 'Content-Type: application/json' \
+J=$(mktemp)
+curl -s -c $J -H 'Content-Type: application/json' \
   -d '{"email":"<manager email>","password":"<dev password>"}' localhost:4000/api/v1/auth/login
 ```
 
@@ -64,7 +64,7 @@ For the isolation checks (another team's manager gets 404, self-approval gets 40
 
 1. **Double-click.** One pending 5-day request `R`. Fire 10 approvals at once:
    ```bash
-   seq 10 | xargs -P10 -I{} curl -s -o /dev/null -w '%{http_code}\n' -b $J -H "$H" \
+   seq 10 | xargs -P10 -I{} curl -s -o /dev/null -w '%{http_code}\n' -b $J \
      -X POST localhost:4000/api/v1/leave-requests/$R/approve | sort | uniq -c
    ```
    Expect one `200` and nine `409`. In `psql`: `used` is 5 (not 50), one ledger `DEDUCT` row, one `APPROVED` event.
