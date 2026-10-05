@@ -4,7 +4,7 @@ import { Role } from '@/generated/prisma/enums'
 import { prisma, type Db } from '@/prisma/client'
 import { balanceRepository } from '@/modules/balances/balance.repository'
 import type { BalanceDto } from '@/modules/balances/balance.types'
-import { findUserById } from '@/modules/users'
+import { findUserInReadScope } from '@/modules/users'
 
 export function allocateYear(year: number): Promise<number> {
   return balanceRepository.allocateYear(prisma, year)
@@ -77,10 +77,7 @@ export async function getBalancesForUser(
   targetUserId: string,
   year: number,
 ): Promise<BalanceDto[]> {
-  const target = await findUserById(targetUserId)
-  const allowed =
-    actor.id === targetUserId || actor.role === Role.HR_ADMIN || target?.managerId === actor.id
-  if (!target || !allowed) {
+  if (!(await findUserInReadScope(actor, targetUserId))) {
     throw new AppError(ERROR_CODES.NOT_FOUND, 404, 'User not found')
   }
   return getBalances(targetUserId, year)

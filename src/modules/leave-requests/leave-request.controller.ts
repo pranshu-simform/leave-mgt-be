@@ -3,6 +3,7 @@ import type { IdParam } from '@/common/validators/common.schema'
 import { ok, paginated } from '@/common/utils/response'
 import type {
   CreateLeaveRequestInput,
+  HistoryQuery,
   ListLeaveRequestsQuery,
   UpdateLeaveRequestInput,
 } from '@/modules/leave-requests/leave-request.schema'
@@ -28,6 +29,17 @@ export async function listMine(req: Request, res: Response): Promise<void> {
 export async function getOne(req: Request, res: Response): Promise<void> {
   const params = req.validated?.params as IdParam
   res.json(ok(await leaveRequestService.getLeaveRequest(req.user!, params.id)))
+}
+
+export async function history(req: Request, res: Response): Promise<void> {
+  const params = req.validated?.params as IdParam
+  const query = req.validated?.query as HistoryQuery
+  const { items, pagination } = await leaveRequestService.getRequestHistory(
+    req.user!,
+    params.id,
+    query,
+  )
+  res.json(paginated(items, pagination))
 }
 
 export async function update(req: Request, res: Response): Promise<void> {

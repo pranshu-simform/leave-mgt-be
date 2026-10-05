@@ -181,5 +181,6 @@ model LeaveRequestEvent {
   request LeaveRequest @relation(fields: [requestId], references: [id])
   actor   User         @relation(fields: [actorId], references: [id])
 
+  @@index([requestId, createdAt, id])
   @@map("leave_request_events")
 }

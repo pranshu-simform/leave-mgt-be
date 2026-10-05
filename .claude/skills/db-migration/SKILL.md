@@ -40,6 +40,9 @@ CREATE FUNCTION forbid_mutation() RETURNS trigger LANGUAGE plpgsql AS
   $$ BEGIN RAISE EXCEPTION 'leave_request_events is append-only'; END $$;
 CREATE TRIGGER leave_request_events_append_only
   BEFORE UPDATE OR DELETE ON leave_request_events FOR EACH ROW EXECUTE FUNCTION forbid_mutation();
+-- row triggers do not fire for TRUNCATE, so block it with a statement trigger too
+CREATE TRIGGER leave_request_events_no_truncate
+  BEFORE TRUNCATE ON leave_request_events FOR EACH STATEMENT EXECUTE FUNCTION forbid_mutation();
 ```
 
 Map violations in `common/errors/errorHandler.ts` (today: `23P01` on `leave_requests_no_overlap` → `OVERLAPPING_REQUEST`, 409). Prisma delivers them as `P2039` with the Postgres code and message under `meta.driverAdapterError.cause`; trigger a real violation and inspect the error before writing a new mapping.
@@ -48,5 +51,5 @@ Map violations in `common/errors/errorHandler.ts` (today: `23P01` on `leave_requ
 
 - Never edit a migration that another environment has applied. Add a new one.
 - Commit the hand-edited SQL. It is the only record of those constraints.
-- A constraint check in `psql` must try to violate it: insert an overlapping request, set `used` above `allowance`, `UPDATE` an event row. Each must fail with the expected SQLSTATE.
+- A constraint check in `psql` must try to violate it: insert an overlapping request, set `used` above `allowance`, `UPDATE` an event row, `TRUNCATE` an append-only table. Each must fail with the expected SQLSTATE.
 - Keep migrations idempotent-safe for a fresh database: `prisma migrate deploy` on an empty Postgres must succeed.

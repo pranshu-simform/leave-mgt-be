@@ -4,6 +4,7 @@ import { idParamSchema } from '@/common/validators/common.schema'
 import * as leaveRequestController from '@/modules/leave-requests/leave-request.controller'
 import {
   createLeaveRequestSchema,
+  historyQuerySchema,
   listLeaveRequestsQuerySchema,
   updateLeaveRequestSchema,
 } from '@/modules/leave-requests/leave-request.schema'
@@ -26,6 +27,11 @@ leaveRequestRouter.get(
   leaveRequestController.listMine,
 )
 leaveRequestRouter.get('/:id', validate({ params: idParamSchema }), leaveRequestController.getOne)
+leaveRequestRouter.get(
+  '/:id/history',
+  validate({ params: idParamSchema, query: historyQuerySchema }),
+  leaveRequestController.history,
+)
 leaveRequestRouter.patch(
   '/:id',
   validate({ params: idParamSchema, body: updateLeaveRequestSchema }),
