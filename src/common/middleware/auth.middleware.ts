@@ -31,6 +31,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     email: user.email,
     name: user.name,
     role: user.role,
+    managerId: user.managerId,
   }
   next()
 }
