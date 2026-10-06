@@ -3,6 +3,7 @@ import type { Db } from '@/prisma/client'
 import type { CalendarStatus } from '@/modules/calendar/calendar.types'
 
 const MAX_OVERLAPPING = 100
+const MAX_TEAMS = 200
 
 export interface AbsenceRow {
   requestId: string
@@ -13,6 +14,12 @@ export interface AbsenceRow {
   startDate: string
   endDate: string
   status: CalendarStatus
+}
+
+export interface TeamRow {
+  managerId: string
+  managerName: string
+  teamSize: number
 }
 
 export interface SummaryRow {
@@ -85,6 +92,17 @@ export const calendarRepository = {
       SELECT coalesce(max(n) + 1, 0)::int AS peak FROM per_day`
     return rows[0]?.peak ?? 0
   },
+
+  // Teams HR can look at: managers with at least one active report. A small reference list, capped.
+  findTeams: (db: Db) =>
+    db.$queryRaw<TeamRow[]>`
+      SELECT m.id AS "managerId", m.name AS "managerName", count(*)::int AS "teamSize"
+      FROM users u
+      JOIN users m ON m.id = u.manager_id AND m.is_active
+      WHERE u.is_active
+      GROUP BY m.id, m.name
+      ORDER BY m.name, m.id
+      LIMIT ${MAX_TEAMS}`,
 
   teamSize: async (db: Db, managerId: string) => {
     const rows = await db.$queryRaw<{ size: number }[]>`

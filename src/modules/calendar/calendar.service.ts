@@ -6,7 +6,7 @@ import { Role } from '@/generated/prisma/enums'
 import { prisma } from '@/prisma/client'
 import { calendarRepository, type AbsenceRow } from '@/modules/calendar/calendar.repository'
 import type { CalendarQuery, SummaryQuery } from '@/modules/calendar/calendar.schema'
-import type { AbsenceItem, OverlapSummary } from '@/modules/calendar/calendar.types'
+import type { AbsenceItem, OverlapSummary, TeamDto } from '@/modules/calendar/calendar.types'
 
 interface Actor {
   id: string
@@ -65,6 +65,10 @@ export async function getCalendar(actor: Actor, query: CalendarQuery) {
     items: items.map(toItem),
     pagination: buildPagination(query.page, query.limit, total),
   }
+}
+
+export async function listTeams(): Promise<TeamDto[]> {
+  return calendarRepository.findTeams(prisma)
 }
 
 export async function getCalendarSummary(actor: Actor, query: SummaryQuery) {
