@@ -7,3 +7,7 @@ export const paginationQuerySchema = z.object({
 })
 
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>
+
+export const idParamSchema = z.object({ id: z.uuid('Invalid id') })
+
+export type IdParam = z.infer<typeof idParamSchema>
