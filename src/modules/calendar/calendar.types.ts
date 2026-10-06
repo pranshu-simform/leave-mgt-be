@@ -24,3 +24,9 @@ export interface SummaryDay {
   pending: number
   approved: number
 }
+
+export interface TeamDto {
+  managerId: string
+  managerName: string
+  teamSize: number
+}
