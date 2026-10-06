@@ -20,6 +20,12 @@ function approverScope(actor: { id: string; role: Role }): Prisma.UserWhereInput
     : { managerId: actor.id, id: { not: actor.id } }
 }
 
+function readScope(actor: { id: string; role: Role }): Prisma.LeaveRequestWhereInput {
+  return actor.role === 'HR_ADMIN'
+    ? {}
+    : { OR: [{ userId: actor.id }, { user: { managerId: actor.id } }] }
+}
+
 interface ListFilters {
   userId: string
   status?: LeaveStatus
@@ -84,6 +90,27 @@ export const leaveRequestRepository = {
 
   findById: (db: Db, id: string) =>
     db.leaveRequest.findUnique({ where: { id }, include: withRelations }),
+
+  findReadable: (db: Db, id: string, actor: { id: string; role: Role }) =>
+    db.leaveRequest.findFirst({
+      where: { id, ...readScope(actor) },
+      include: withRelations,
+    }),
+
+  listEvents: async (db: Db, requestId: string, skip: number, take: number) => {
+    const where = { requestId }
+    const [items, total] = await Promise.all([
+      db.leaveRequestEvent.findMany({
+        where,
+        include: { actor: { select: { id: true, name: true } } },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        skip,
+        take,
+      }),
+      db.leaveRequestEvent.count({ where }),
+    ])
+    return { items, total }
+  },
 
   findOwned: (db: Db, id: string, userId: string) =>
     db.leaveRequest.findFirst({

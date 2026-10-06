@@ -1,5 +1,5 @@
 import type { ErrorCode } from '@/common/errors/errorCodes'
-import type { LeaveStatus } from '@/generated/prisma/enums'
+import type { EventAction, LeaveStatus } from '@/generated/prisma/enums'
 
 export interface LeaveRequestDto {
   id: string
@@ -13,6 +13,17 @@ export interface LeaveRequestDto {
   requester: { id: string; name: string }
   decidedAt: string | null
   createdAt: string
+}
+
+export interface RequestEventDto {
+  id: string
+  action: EventAction
+  fromStatus: LeaveStatus | null
+  toStatus: LeaveStatus
+  reason: string | null
+  metadata: unknown
+  createdAt: string
+  actor: { id: string; name: string }
 }
 
 export type RequestViolationCode = Extract<

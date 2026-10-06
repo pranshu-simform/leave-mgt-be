@@ -20,12 +20,14 @@ import {
 } from '@/modules/leave-requests/leave-request.repository'
 import type {
   CreateLeaveRequestInput,
+  HistoryQuery,
   ListLeaveRequestsQuery,
   UpdateLeaveRequestInput,
 } from '@/modules/leave-requests/leave-request.schema'
 import type {
   LeaveRequestDto,
   RequestCheck,
+  RequestEventDto,
   RequestViolation,
 } from '@/modules/leave-requests/leave-request.types'
 
@@ -203,11 +205,29 @@ export async function listMyLeaveRequests(actor: Actor, query: ListLeaveRequests
 }
 
 export async function getLeaveRequest(actor: Actor, id: string): Promise<LeaveRequestDto> {
-  const row = await leaveRequestRepository.findById(prisma, id)
-  const allowed =
-    row?.userId === actor.id || actor.role === Role.HR_ADMIN || row?.user.managerId === actor.id
-  if (!row || !allowed) throw notFound()
+  const row = await leaveRequestRepository.findReadable(prisma, id, actor)
+  if (!row) throw notFound()
   return toDto(row)
+}
+
+export async function getRequestHistory(actor: Actor, id: string, query: HistoryQuery) {
+  if (!(await leaveRequestRepository.findReadable(prisma, id, actor))) throw notFound()
+
+  const { skip, take } = toSkipTake(query.page, query.limit)
+  const { items, total } = await leaveRequestRepository.listEvents(prisma, id, skip, take)
+  return {
+    items: items.map((event): RequestEventDto => ({
+      id: event.id,
+      action: event.action,
+      fromStatus: event.fromStatus,
+      toStatus: event.toStatus,
+      reason: event.reason,
+      metadata: event.metadata,
+      createdAt: event.createdAt.toISOString(),
+      actor: event.actor,
+    })),
+    pagination: buildPagination(query.page, query.limit, total),
+  }
 }
 
 async function explainNoMatch(db: Db, id: string, userId: string): Promise<never> {

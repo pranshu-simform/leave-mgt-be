@@ -1,3 +1,4 @@
+import type { Role } from '@/generated/prisma/enums'
 import { prisma, type Db } from '@/prisma/client'
 import { userRepository } from '@/modules/users/user.repository'
 import type { PublicUser } from '@/modules/users/user.types'
@@ -8,6 +9,10 @@ export function findUserByEmail(email: string) {
 
 export function findUserById(id: string) {
   return userRepository.findById(prisma, id)
+}
+
+export function findUserInReadScope(actor: { id: string; role: Role }, id: string) {
+  return userRepository.findInReadScope(prisma, id, actor)
 }
 
 export function setPasswordHash(db: Db, id: string, passwordHash: string) {

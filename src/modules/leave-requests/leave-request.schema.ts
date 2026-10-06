@@ -30,6 +30,9 @@ export const updateLeaveRequestSchema = z
   .refine((value) => value.startDate <= value.endDate, endNotBeforeStart)
 export type UpdateLeaveRequestInput = z.infer<typeof updateLeaveRequestSchema>
 
+export const historyQuerySchema = paginationQuerySchema
+export type HistoryQuery = z.infer<typeof historyQuerySchema>
+
 export const listLeaveRequestsQuerySchema = paginationQuerySchema.extend({
   status: z.enum(LeaveStatus).optional(),
   year: z.coerce.number('Year must be a number').int().min(2000).max(2100).optional(),
