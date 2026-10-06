@@ -6,4 +6,5 @@ export interface BalanceDto {
   allowance: number
   used: number
   remaining: number
+  pendingDays: number
 }

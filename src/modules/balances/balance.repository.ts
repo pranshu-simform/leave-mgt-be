@@ -1,8 +1,30 @@
+import { isoToDate } from '@/common/utils/dates'
 import type { Db } from '@/prisma/client'
 
 const MAX_BALANCES = 100
 
 export const balanceRepository = {
+  findOne: (db: Db, userId: string, leaveTypeId: string, year: number) =>
+    db.leaveBalance.findUnique({
+      where: { userId_leaveTypeId_year: { userId, leaveTypeId, year } },
+    }),
+
+  pendingDaysByType: async (db: Db, userId: string, year: number) => {
+    const rows = await db.leaveRequest.groupBy({
+      by: ['leaveTypeId'],
+      where: {
+        userId,
+        status: 'PENDING',
+        startDate: {
+          gte: isoToDate(`${year}-01-01`),
+          lte: isoToDate(`${year}-12-31`),
+        },
+      },
+      _sum: { days: true },
+    })
+    return new Map(rows.map((row) => [row.leaveTypeId, row._sum.days ?? 0]))
+  },
+
   findByUserAndYear: (db: Db, userId: string, year: number) =>
     db.leaveBalance.findMany({
       where: { userId, year },

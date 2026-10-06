@@ -11,7 +11,7 @@ Express 5, TypeScript 7 (strict, ESM, `nodenext`), Prisma 7 with `@prisma/adapte
 
 ## Structure
 
-Phases 0, 2 and 3 are applied. `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types` and `balances` modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
+Phases 0, 2, 3 and 4 are applied. `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types`, `balances` and `leave-requests` modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
 
 ```
 src/
@@ -54,7 +54,7 @@ Modules: auth, users, teams, leave-types, balances, holidays, leave-requests, ap
 - Response shapes (see `docs/API-RESPONSES.md`): success `{ success: true, message?, data }`, paginated `{ success: true, data: [...], pagination }`, error `{ success: false, error: { code, message, details? } }`. Build bodies only with `ok()`, `paginated()` and `fail()` from `common/utils/response.ts`. Never write `res.json({...})` by hand. Action with nothing to return: `ok(null)`, not 204. The request id is the `X-Request-Id` header, never in the body.
 - Statuses: 400 `VALIDATION_ERROR`, 401 `UNAUTHENTICATED` / `TOKEN_EXPIRED`, 403 `FORBIDDEN` / `SELF_APPROVAL_FORBIDDEN`, 404 `NOT_FOUND`, 409 `ALREADY_DECIDED` / `REQUEST_LOCKED` / `OVERLAPPING_REQUEST` / `VERSION_CONFLICT`, 422 `INSUFFICIENT_BALANCE` and rule violations.
 - Every route uses `validate({ body, query, params })` with a schema from the module's `*.schema.ts`. Schema names are `<action><Feature>Schema`, types are `<Action><Feature>Input = z.infer<…>`.
-- Postgres `23P01` (exclusion) and `23514` (check) are mapped to `AppError` in `common/errors/errorHandler.ts`, not in services.
+- Database constraint errors are mapped to `AppError` in `common/errors/errorHandler.ts`, not in services. Today that is the overlap exclusion constraint (`23P01` → 409 `OVERLAPPING_REQUEST`); Prisma's pg adapter delivers it as `P2039` with the Postgres code under `meta.driverAdapterError.cause`. Add a mapping only when a constraint can be hit by a real request.
 
 ## Data rules
 
