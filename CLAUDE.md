@@ -11,7 +11,7 @@ Express 5, TypeScript 7 (strict, ESM, `nodenext`), Prisma 7 with `@prisma/adapte
 
 ## Structure
 
-Phases 0, 2, 3 and 4 are applied. `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types`, `balances` and `leave-requests` modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
+Phases 0, 2, 3, 4 and 5 are applied. `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types`, `balances`, `leave-requests` and `approvals` modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
 
 ```
 src/

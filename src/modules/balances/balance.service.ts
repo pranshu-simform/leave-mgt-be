@@ -1,7 +1,7 @@
 import { AppError } from '@/common/errors/AppError'
 import { ERROR_CODES } from '@/common/errors/errorCodes'
 import { Role } from '@/generated/prisma/enums'
-import { prisma } from '@/prisma/client'
+import { prisma, type Db } from '@/prisma/client'
 import { balanceRepository } from '@/modules/balances/balance.repository'
 import type { BalanceDto } from '@/modules/balances/balance.types'
 import { findUserById } from '@/modules/users'
@@ -31,13 +31,56 @@ export async function getBalances(userId: string, year: number): Promise<Balance
   }))
 }
 
+interface BalanceChange {
+  userId: string
+  leaveTypeId: string
+  year: number
+  days: number
+  requestId: string
+  actorId: string | null
+}
+
+export async function deductBalance(tx: Db, change: BalanceChange): Promise<void> {
+  const balanceId = await balanceRepository.deduct(tx, change)
+  if (!balanceId) {
+    throw new AppError(
+      ERROR_CODES.INSUFFICIENT_BALANCE,
+      422,
+      'Not enough leave balance to approve this request',
+    )
+  }
+  await balanceRepository.addLedgerEntry(tx, {
+    balanceId,
+    delta: -change.days,
+    reason: 'DEDUCT',
+    requestId: change.requestId,
+    actorId: change.actorId,
+  })
+}
+
+export async function refundBalance(tx: Db, change: BalanceChange): Promise<void> {
+  const balanceId = await balanceRepository.refund(tx, change)
+  if (!balanceId) {
+    throw new AppError(ERROR_CODES.INTERNAL_ERROR, 500, 'The balance could not be refunded')
+  }
+  await balanceRepository.addLedgerEntry(tx, {
+    balanceId,
+    delta: change.days,
+    reason: 'REFUND',
+    requestId: change.requestId,
+    actorId: change.actorId,
+  })
+}
+
 export async function getBalancesForUser(
   actor: { id: string; role: Role },
   targetUserId: string,
   year: number,
 ): Promise<BalanceDto[]> {
-  const allowed = actor.id === targetUserId || actor.role === Role.HR_ADMIN
-  if (!allowed || !(await findUserById(targetUserId))) {
+  const target = await findUserById(targetUserId)
+  const allowed =
+    actor.id === targetUserId || actor.role === Role.HR_ADMIN || target?.managerId === actor.id
+  if (!target || !allowed) {
     throw new AppError(ERROR_CODES.NOT_FOUND, 404, 'User not found')
   }
   return getBalances(targetUserId, year)

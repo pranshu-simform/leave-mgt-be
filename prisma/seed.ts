@@ -12,24 +12,37 @@ const USERS = [
     email: 'hr@example.com',
     name: 'Harper Hayes',
     role: Role.HR_ADMIN,
-    isActive: true,
+    managerEmail: null,
   },
   {
     email: 'manager@example.com',
     name: 'Morgan Miles',
     role: Role.MANAGER,
-    isActive: true,
+    managerEmail: 'hr@example.com',
+  },
+  {
+    email: 'manager2@example.com',
+    name: 'Quinn Quill',
+    role: Role.MANAGER,
+    managerEmail: 'hr@example.com',
   },
   {
     email: 'employee@example.com',
     name: 'Elliot Evans',
     role: Role.EMPLOYEE,
-    isActive: true,
+    managerEmail: 'manager@example.com',
+  },
+  {
+    email: 'employee2@example.com',
+    name: 'Rory Reed',
+    role: Role.EMPLOYEE,
+    managerEmail: 'manager2@example.com',
   },
   {
     email: 'inactive@example.com',
     name: 'Indigo Ives',
     role: Role.EMPLOYEE,
+    managerEmail: 'manager@example.com',
     isActive: false,
   },
 ]
@@ -44,6 +57,7 @@ const LEAVE_TYPES = [
     minNoticeDays: 3,
     maxConsecutiveDays: 15,
     requiresNote: false,
+    requiresApproval: true,
   },
   {
     code: 'SICK',
@@ -54,6 +68,7 @@ const LEAVE_TYPES = [
     minNoticeDays: 0,
     maxConsecutiveDays: null,
     requiresNote: false,
+    requiresApproval: false,
   },
   {
     code: 'UNPAID',
@@ -64,6 +79,7 @@ const LEAVE_TYPES = [
     minNoticeDays: 7,
     maxConsecutiveDays: null,
     requiresNote: true,
+    requiresApproval: true,
   },
   {
     code: 'PARENTAL',
@@ -74,6 +90,7 @@ const LEAVE_TYPES = [
     minNoticeDays: 14,
     maxConsecutiveDays: 30,
     requiresNote: false,
+    requiresApproval: true,
   },
 ]
 
@@ -87,16 +104,28 @@ const PUBLIC_HOLIDAYS = [
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash(DEV_PASSWORD, BCRYPT_COST)
 
-  for (const user of USERS) {
-    await prisma.user.upsert({
+  const ids = new Map<string, string>()
+  for (const { managerEmail, isActive = true, ...user } of USERS) {
+    const data = {
+      ...user,
+      isActive,
+      managerId: managerEmail ? (ids.get(managerEmail) ?? null) : null,
+      passwordHash,
+    }
+    const saved = await prisma.user.upsert({
       where: { email: user.email },
-      create: { ...user, passwordHash },
-      update: { ...user, passwordHash },
+      create: data,
+      update: data,
     })
+    ids.set(user.email, saved.id)
   }
 
   for (const type of LEAVE_TYPES) {
-    await prisma.leaveType.upsert({ where: { code: type.code }, create: type, update: type })
+    await prisma.leaveType.upsert({
+      where: { code: type.code },
+      create: type,
+      update: type,
+    })
   }
 
   for (const holiday of PUBLIC_HOLIDAYS) {

@@ -10,6 +10,8 @@ export interface LeaveRequestDto {
   note: string | null
   status: LeaveStatus
   version: number
+  requester: { id: string; name: string }
+  decidedAt: string | null
   createdAt: string
 }
 
