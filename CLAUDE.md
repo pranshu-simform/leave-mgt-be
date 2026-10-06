@@ -2,6 +2,10 @@
 
 Express 5, TypeScript 7 (strict, ESM, `nodenext`), Prisma 7 with `@prisma/adapter-pg`, PostgreSQL, Zod 4, pnpm. Read the root [CLAUDE.md](../CLAUDE.md) invariants first. Structure details are in [docs/BACKEND-STRUCTURE.md](../docs/BACKEND-STRUCTURE.md).
 
+## Docker
+
+`backend/Dockerfile` builds the API for the root `docker-compose.yml` and keeps to one job: `CMD node dist/server.js`. **The container does not migrate or seed; that is done by hand** with `docker compose exec backend ./node_modules/.bin/prisma migrate deploy` and `docker compose exec backend node dist/seed.js` (both idempotent). That is why the runtime image keeps `prisma` (a production dependency) and `dist/seed.js` (a second `tsdown` entry): do not move them back to `devDependencies`. The runtime image has production dependencies only and runs as the non-root `node` user; `prisma generate` needs `DATABASE_URL` set to any value.
+
 ## Commands
 
 - `pnpm dev` (tsx watch on `src/server.ts`, loads `.env` if present), `pnpm build` (tsdown, bundles to `dist/server.js`), `pnpm start` (`node dist/server.js`)

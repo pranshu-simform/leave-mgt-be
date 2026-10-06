@@ -1,0 +1,13 @@
+# Keep the build context small and keep secrets and host files out of the image.
+node_modules
+dist
+src/generated
+.git
+.husky
+.claude
+.env
+.env.*
+!.env.example
+*.log
+Dockerfile
+.dockerignore
