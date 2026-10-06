@@ -37,5 +37,7 @@ export const listLeaveRequestsQuerySchema = paginationQuerySchema.extend({
   status: z.enum(LeaveStatus).optional(),
   year: z.coerce.number('Year must be a number').int().min(2000).max(2100).optional(),
   leaveTypeId: z.uuid('Invalid leave type').optional(),
+  // Requests that end on or after this date, soonest first (the "upcoming" view).
+  from: isoDateSchema.optional(),
 })
 export type ListLeaveRequestsQuery = z.infer<typeof listLeaveRequestsQuerySchema>

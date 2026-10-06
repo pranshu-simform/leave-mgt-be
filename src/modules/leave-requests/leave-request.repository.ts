@@ -31,6 +31,7 @@ interface ListFilters {
   status?: LeaveStatus
   year?: number
   leaveTypeId?: string
+  from?: string
 }
 
 function listWhere({
@@ -38,11 +39,13 @@ function listWhere({
   status,
   year,
   leaveTypeId,
+  from,
 }: ListFilters): Prisma.LeaveRequestWhereInput {
   return {
     userId,
     ...(status ? { status } : {}),
     ...(leaveTypeId ? { leaveTypeId } : {}),
+    ...(from ? { endDate: { gte: isoToDate(from) } } : {}),
     ...(year
       ? {
           startDate: {
@@ -124,7 +127,8 @@ export const leaveRequestRepository = {
       db.leaveRequest.findMany({
         where,
         include: withRelations,
-        orderBy: [{ startDate: 'desc' }, { id: 'asc' }],
+        // Newest first, except the upcoming view (`from`), which reads soonest first.
+        orderBy: [{ startDate: filters.from ? 'asc' : 'desc' }, { id: 'asc' }],
         skip,
         take,
       }),
