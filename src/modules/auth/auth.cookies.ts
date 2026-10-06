@@ -9,7 +9,7 @@ import { env } from '@/config/env'
 import type { IssuedSession } from '@/modules/auth/auth.types'
 
 function baseOptions(path: string): CookieOptions {
-  return { httpOnly: true, sameSite: 'strict', secure: env.COOKIE_SECURE, path }
+  return { httpOnly: true, sameSite: 'none', secure: env.COOKIE_SECURE, path }
 }
 
 export function setSessionCookies(res: Response, session: IssuedSession): void {
