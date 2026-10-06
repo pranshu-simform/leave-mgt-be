@@ -15,6 +15,12 @@ approvalRouter.get(
   validate({ query: approvalQuerySchema }),
   approvalController.list,
 )
+approvalRouter.get(
+  '/approvals/:id/overlaps',
+  approversOnly,
+  validate({ params: idParamSchema }),
+  approvalController.overlaps,
+)
 approvalRouter.post(
   '/leave-requests/:id/approve',
   approversOnly,

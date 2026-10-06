@@ -5,7 +5,9 @@ import {
   format,
   getYear,
   isValid,
+  endOfMonth,
   isWeekend as isWeekendDay,
+  startOfMonth,
 } from 'date-fns'
 
 const ISO_FORMAT = 'yyyy-MM-dd'
@@ -50,6 +52,14 @@ export function diffDays(from: string, to: string): number {
 
 export function isoYear(iso: string): number {
   return getYear(parseIsoDate(iso))
+}
+
+export function monthBounds(month: string): { from: string; to: string } {
+  const first = parseIsoDate(`${month}-01`)
+  return {
+    from: format(startOfMonth(first), ISO_FORMAT),
+    to: format(endOfMonth(first), ISO_FORMAT),
+  }
 }
 
 export function isWeekend(iso: string): boolean {

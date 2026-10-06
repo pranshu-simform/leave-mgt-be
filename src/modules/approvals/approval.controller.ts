@@ -4,6 +4,7 @@ import type { IdParam } from '@/common/validators/common.schema'
 import type { ApprovalQuery, RejectInput } from '@/modules/approvals/approval.schema'
 import {
   approveLeaveRequest,
+  getRequestOverlaps,
   listRequestsForApprover,
   rejectLeaveRequest,
 } from '@/modules/leave-requests'
@@ -25,4 +26,9 @@ export async function reject(req: Request, res: Response): Promise<void> {
   res.json(
     ok(await rejectLeaveRequest(req.user!, params.id, body.reason), 'Leave request rejected'),
   )
+}
+
+export async function overlaps(req: Request, res: Response): Promise<void> {
+  const params = req.validated?.params as IdParam
+  res.json(ok(await getRequestOverlaps(req.user!, params.id)))
 }

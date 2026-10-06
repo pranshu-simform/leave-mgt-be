@@ -6,6 +6,7 @@ import { Role, type LeaveStatus } from '@/generated/prisma/enums'
 import type { LeaveType } from '@/generated/prisma/client'
 import { prisma, withTransaction, type Db } from '@/prisma/client'
 import { findBalance, refundBalance } from '@/modules/balances'
+import { getOverlaps } from '@/modules/calendar'
 import { getWorkingDays } from '@/modules/holidays'
 import { evaluateLeaveRules, getActiveLeaveType } from '@/modules/leave-types'
 import {
@@ -31,6 +32,7 @@ import type {
 interface Actor {
   id: string
   role: Role
+  managerId: string | null
 }
 
 function toDto(row: LeaveRequestRow): LeaveRequestDto {
@@ -150,7 +152,10 @@ function throwIfInvalid(check: RequestCheck): void {
 }
 
 export async function previewLeaveRequest(actor: Actor, input: CreateLeaveRequestInput) {
-  return (await evaluateRequest(actor.id, input)).check
+  const { check } = await evaluateRequest(actor.id, input)
+
+  const overlaps = check.days > 0 ? await getOverlaps(actor, input.startDate, input.endDate) : null
+  return { ...check, overlaps }
 }
 
 export async function submitLeaveRequest(
@@ -344,6 +349,12 @@ export async function rejectLeaveRequest(
     return leaveRequestRepository.findById(tx, id)
   })
   return toDto(rejected!)
+}
+
+export async function getRequestOverlaps(actor: Approver, id: string) {
+  const row = await leaveRequestRepository.findInApproverScope(prisma, id, actor)
+  if (!row) throw notFound()
+  return getOverlaps(row.user, dateToIso(row.startDate), dateToIso(row.endDate))
 }
 
 export async function listRequestsForApprover(

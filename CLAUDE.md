@@ -27,7 +27,7 @@ prisma/             # schema.prisma, migrations/, seed.ts
 scripts/            # seed-load.ts (stretch only: 5,000-user query-plan data)
 ```
 
-Modules: auth, users, teams, leave-types, balances, holidays, leave-requests, approvals, calendar. Use the `add-module` skill to create one.
+Modules: auth, users, leave-types, balances, holidays, leave-requests, approvals, calendar. A team is the users who share a `manager_id`; there is no teams module or table. Use the `add-module` skill to create one.
 
 ## API versioning
 
