@@ -1,7 +1,6 @@
-import type { Role } from '@/generated/prisma/enums'
 import { prisma, type Db } from '@/prisma/client'
-import { userRepository } from '@/modules/users/user.repository'
-import type { PublicUser } from '@/modules/users/user.types'
+import { userRepository } from '@/modules/users/repositories/user.repository'
+import type { UserActor } from '@/modules/users/types/user.types'
 
 export function findUserByEmail(email: string) {
   return userRepository.findByEmail(prisma, email)
@@ -11,14 +10,10 @@ export function findUserById(id: string) {
   return userRepository.findById(prisma, id)
 }
 
-export function findUserInReadScope(actor: { id: string; role: Role }, id: string) {
+export function findUserInReadScope(actor: UserActor, id: string) {
   return userRepository.findInReadScope(prisma, id, actor)
 }
 
 export function setPasswordHash(db: Db, id: string, passwordHash: string) {
   return userRepository.updatePasswordHash(db, id, passwordHash)
-}
-
-export function toPublicUser(user: PublicUser): PublicUser {
-  return { id: user.id, email: user.email, name: user.name, role: user.role }
 }
