@@ -1,4 +1,6 @@
+import type { z } from 'zod'
 import type { ErrorCode } from '@/common/errors/errorCodes'
+import type { idParamSchema, paginationQuerySchema } from '@/common/validators/common.schema'
 
 export interface ApiErrorDetail {
   field: string
@@ -35,3 +37,24 @@ export interface ApiErrorResponse {
     details?: ApiErrorDetail[]
   }
 }
+
+export type ValidationSource = 'body' | 'query' | 'params'
+
+export interface SkipTake {
+  skip: number
+  take: number
+}
+
+export interface IsoRange {
+  from: string
+  to: string
+}
+
+export interface PostgresErrorInfo {
+  code: string
+  message: string
+}
+
+export type PaginationQuery = z.infer<typeof paginationQuerySchema>
+
+export type IdParam = z.infer<typeof idParamSchema>

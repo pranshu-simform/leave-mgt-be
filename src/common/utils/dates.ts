@@ -9,9 +9,8 @@ import {
   isWeekend as isWeekendDay,
   startOfMonth,
 } from 'date-fns'
-
-const ISO_FORMAT = 'yyyy-MM-dd'
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+import { ISO_DATE, ISO_FORMAT } from '@/common/constants'
+import type { IsoRange } from '@/common/types/common.types'
 
 function parseIsoDate(iso: string): UTCDate {
   const date = new UTCDate(iso)
@@ -54,7 +53,7 @@ export function isoYear(iso: string): number {
   return getYear(parseIsoDate(iso))
 }
 
-export function monthBounds(month: string): { from: string; to: string } {
+export function monthBounds(month: string): IsoRange {
   const first = parseIsoDate(`${month}-01`)
   return {
     from: format(startOfMonth(first), ISO_FORMAT),

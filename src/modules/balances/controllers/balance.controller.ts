@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import type { IdParam } from '@/common/validators/common.schema'
+import type { IdParam } from '@/common/types/common.types'
 import { ok } from '@/common/utils/response'
 import type { BalanceQuery } from '@/modules/balances/types/balance.types'
 import * as balanceService from '@/modules/balances/services/balance.service'

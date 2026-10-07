@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import type { IdParam } from '@/common/validators/common.schema'
+import type { IdParam } from '@/common/types/common.types'
 import { ok, paginated } from '@/common/utils/response'
 import type {
   CreateLeaveRequestInput,

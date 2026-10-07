@@ -1,17 +1,16 @@
 import type { NextFunction, Request, Response } from 'express'
 import type { ZodType } from 'zod'
+import { VALIDATION_SOURCES } from '@/common/constants'
 import { AppError } from '@/common/errors/AppError'
 import { ERROR_CODES } from '@/common/errors/errorCodes'
-import type { ApiErrorDetail } from '@/common/types/common.types'
+import type { ApiErrorDetail, ValidationSource } from '@/common/types/common.types'
 
-type Source = 'body' | 'query' | 'params'
-
-export function validate(schemas: Partial<Record<Source, ZodType>>) {
+export function validate(schemas: Partial<Record<ValidationSource, ZodType>>) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const validated: NonNullable<Request['validated']> = {}
     const details: ApiErrorDetail[] = []
 
-    for (const source of ['body', 'query', 'params'] as const) {
+    for (const source of VALIDATION_SOURCES) {
       const schema = schemas[source]
       if (!schema) continue
 

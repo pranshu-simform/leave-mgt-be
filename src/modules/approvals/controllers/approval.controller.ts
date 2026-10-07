@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import { ok, paginated } from '@/common/utils/response'
-import type { IdParam } from '@/common/validators/common.schema'
+import type { IdParam } from '@/common/types/common.types'
 import type { ApprovalQuery, RejectInput } from '@/modules/approvals/types/approval.types'
 import {
   approveLeaveRequest,

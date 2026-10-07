@@ -22,7 +22,7 @@ src/
   app.ts            # builds the app, never listens
   server.ts         # listen + graceful shutdown
   config/           # env.ts (Zod), database.ts, logger.ts
-  common/           # constants, errors, middleware, types, utils, validators
+  common/           # constants, errors, middleware, types, utils (jwt, dates, pagination, response, request, error.guards), validators
   modules/<name>/   # constants/ controllers/ repositories/ routes/ schemas/ services/ types/ utils/ (+ index.ts at the module root), see Naming and style
   routes/           # index.ts (/api/health + /api/v1), health.routes.ts, v1/index.ts (module routers, auth first)
   prisma/client.ts  # PrismaClient singleton (withTransaction() arrives with the first repository)

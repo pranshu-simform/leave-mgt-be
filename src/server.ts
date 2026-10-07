@@ -1,9 +1,8 @@
 import { app } from '@/app'
+import { SHUTDOWN_TIMEOUT_MS } from '@/common/constants'
 import { env } from '@/config/env'
 import { logger } from '@/config/logger'
 import { prisma } from '@/prisma/client'
-
-const SHUTDOWN_TIMEOUT_MS = 10_000
 
 process.on('unhandledRejection', (reason) => {
   logger.fatal({ err: reason }, 'Unhandled promise rejection')
