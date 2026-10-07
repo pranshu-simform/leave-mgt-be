@@ -1,1 +1,1 @@
-export { approvalRouter } from '@/modules/approvals/approval.routes'
+export { approvalRouter } from '@/modules/approvals/routes/approval.routes'
