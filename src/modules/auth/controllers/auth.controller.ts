@@ -1,20 +1,10 @@
 import type { Request, Response } from 'express'
-import { COOKIE_NAMES } from '@/common/constants'
 import { ok } from '@/common/utils/response'
-import { clearSessionCookies, setSessionCookies } from '@/modules/auth/utils/auth.cookies'
-import type { ChangePasswordInput, LoginInput } from '@/modules/auth/schemas/auth.schema'
 import * as authService from '@/modules/auth/services/auth.service'
-import type { RequestMeta } from '@/modules/auth/types/auth.types'
+import type { ChangePasswordInput, LoginInput } from '@/modules/auth/types/auth.types'
+import { clearSessionCookies, setSessionCookies } from '@/modules/auth/utils/auth.cookies'
+import { readRefreshCookie, requestMeta } from '@/modules/auth/utils/auth.request'
 import { toPublicUser } from '@/modules/users'
-
-function requestMeta(req: Request): RequestMeta {
-  return { userAgent: req.header('user-agent'), ip: req.ip }
-}
-
-function readRefreshCookie(req: Request): string | undefined {
-  const value: unknown = req.cookies?.[COOKIE_NAMES.REFRESH_TOKEN]
-  return typeof value === 'string' && value ? value : undefined
-}
 
 export async function login(req: Request, res: Response): Promise<void> {
   const { user, session } = await authService.login(

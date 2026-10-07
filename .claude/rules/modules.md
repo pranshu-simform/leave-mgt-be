@@ -7,6 +7,7 @@ paths:
 
 # Module rules
 
+- A module is one folder per layer, and constants, types and utils each live in their own files: `constants/<name>.constants.ts` (numbers, caps, regexes, role lists, Prisma include objects), `types/<name>.types.ts` (every interface and type, including `z.infer` input types and repository parameter objects), `utils/<name>.<concern>.ts` (pure helpers: mappers, error factories, query builders, request or cookie helpers). Controllers, routes, schemas, services and repositories contain only their own layer: no top-level `const` (other than the exported router, repository object or schema), no `interface` or `type`, and no pure helper functions (a private service step that uses a repository is fine). Create a folder only when the module has something for it.
 - Import with `@/` and no extension. Business routes mount in `routes/v1/index.ts`, never outside a versioned router.
 - Layers: controller → service → repository. Controllers never import Prisma. Services never write SQL. Repositories never decide business rules.
 - Repository methods take `db: Db` as the first argument. Never import the global `prisma` inside a repository.
