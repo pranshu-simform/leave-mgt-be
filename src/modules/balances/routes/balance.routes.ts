@@ -1,8 +1,8 @@
 import { Router } from 'express'
 import { validate } from '@/common/middleware/validate.middleware'
 import { idParamSchema } from '@/common/validators/common.schema'
-import * as balanceController from '@/modules/balances/balance.controller'
-import { balanceQuerySchema } from '@/modules/balances/balance.schema'
+import * as balanceController from '@/modules/balances/controllers/balance.controller'
+import { balanceQuerySchema } from '@/modules/balances/schemas/balance.schema'
 
 export const balanceRouter = Router()
 balanceRouter.get(

@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express'
 import type { IdParam } from '@/common/validators/common.schema'
 import { ok } from '@/common/utils/response'
-import type { BalanceQuery } from '@/modules/balances/balance.schema'
-import * as balanceService from '@/modules/balances/balance.service'
+import type { BalanceQuery } from '@/modules/balances/types/balance.types'
+import * as balanceService from '@/modules/balances/services/balance.service'
 
 export async function getMine(req: Request, res: Response): Promise<void> {
   const query = req.validated?.query as BalanceQuery
