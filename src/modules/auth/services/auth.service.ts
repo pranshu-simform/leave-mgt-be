@@ -1,31 +1,21 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { BCRYPT_COST, REFRESH_TOKEN_TTL_SECONDS } from '@/common/constants'
 import { AppError } from '@/common/errors/AppError'
 import { ERROR_CODES } from '@/common/errors/errorCodes'
 import { signAccessToken } from '@/common/utils/jwt'
 import { prisma, withTransaction, type Db } from '@/prisma/client'
+import { DUMMY_PASSWORD_HASH } from '@/modules/auth/constants/auth.constants'
 import { refreshTokenRepository } from '@/modules/auth/repositories/refresh-token.repository'
-import type { ChangePasswordInput, LoginInput } from '@/modules/auth/schemas/auth.schema'
-import type { IssuedSession, RequestMeta } from '@/modules/auth/types/auth.types'
-import {
-  findUserByEmail,
-  findUserById,
-  setPasswordHash,
-  toPublicUser,
-  type PublicUser,
-} from '@/modules/users'
-
-// Compared against when the email is unknown, so a miss costs the same as a wrong password.
-const DUMMY_PASSWORD_HASH = '$2b$10$IC/YqALIkNJBhyLaP7.j7.BZ2qoz1c6y1lmHiznf75DVxL38UM6Bq'
-
-function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex')
-}
-
-function invalidCredentials(): AppError {
-  return new AppError(ERROR_CODES.UNAUTHENTICATED, 401, 'Invalid email or password')
-}
+import type {
+  AuthResult,
+  ChangePasswordInput,
+  LoginInput,
+  RequestMeta,
+} from '@/modules/auth/types/auth.types'
+import { authRequired, invalidCredentials } from '@/modules/auth/utils/auth.errors'
+import { generateRefreshToken, hashToken } from '@/modules/auth/utils/auth.tokens'
+import { findUserByEmail, findUserById, setPasswordHash, toPublicUser } from '@/modules/users'
 
 async function issueRefreshToken(
   db: Db,
@@ -33,7 +23,7 @@ async function issueRefreshToken(
   familyId: string,
   meta: RequestMeta,
 ): Promise<string> {
-  const raw = randomBytes(32).toString('base64url')
+  const raw = generateRefreshToken()
   await refreshTokenRepository.create(db, {
     userId,
     tokenHash: hashToken(raw),
@@ -45,10 +35,7 @@ async function issueRefreshToken(
   return raw
 }
 
-export async function login(
-  input: LoginInput,
-  meta: RequestMeta,
-): Promise<{ user: PublicUser; session: IssuedSession }> {
+export async function login(input: LoginInput, meta: RequestMeta): Promise<AuthResult> {
   const user = await findUserByEmail(input.email)
   const passwordMatches = await bcrypt.compare(
     input.password,
@@ -66,8 +53,8 @@ export async function login(
 export async function refresh(
   rawToken: string | undefined,
   meta: RequestMeta,
-): Promise<{ user: PublicUser; session: IssuedSession }> {
-  if (!rawToken) throw new AppError(ERROR_CODES.UNAUTHENTICATED, 401, 'Authentication required')
+): Promise<AuthResult> {
+  if (!rawToken) throw authRequired()
 
   const tokenHash = hashToken(rawToken)
   const now = new Date()
@@ -98,7 +85,7 @@ export async function refresh(
     }
   })
 
-  if (!result) throw new AppError(ERROR_CODES.UNAUTHENTICATED, 401, 'Authentication required')
+  if (!result) throw authRequired()
   return result
 }
 

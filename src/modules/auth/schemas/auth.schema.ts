@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@/modules/auth/constants/auth.constants'
 
 const email = z
   .string('Email is required')
@@ -11,23 +12,21 @@ export const loginSchema = z.object({
   password: z
     .string('Password is required')
     .min(1, 'Password is required')
-    .max(72, 'Password is too long'),
+    .max(PASSWORD_MAX_LENGTH, 'Password is too long'),
 })
-export type LoginInput = z.infer<typeof loginSchema>
 
 export const changePasswordSchema = z
   .object({
     currentPassword: z
       .string('Current password is required')
       .min(1, 'Current password is required')
-      .max(72),
+      .max(PASSWORD_MAX_LENGTH),
     newPassword: z
       .string('New password is required')
-      .min(8, 'Password must be at least 8 characters')
-      .max(72, 'Password must be at most 72 characters'),
+      .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+      .max(PASSWORD_MAX_LENGTH, `Password must be at most ${PASSWORD_MAX_LENGTH} characters`),
   })
   .refine((value) => value.newPassword !== value.currentPassword, {
     path: ['newPassword'],
     message: 'New password must be different from the current password',
   })
-export type ChangePasswordInput = z.infer<typeof changePasswordSchema>

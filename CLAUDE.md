@@ -1,6 +1,6 @@
 # Backend
 
-Express 5, TypeScript 7 (strict, ESM, `nodenext`), Prisma 7 with `@prisma/adapter-pg`, PostgreSQL, Zod 4, pnpm. Read the root [CLAUDE.md](../CLAUDE.md) invariants first. Structure details are in [docs/BACKEND-STRUCTURE.md](../docs/BACKEND-STRUCTURE.md).
+Express 5, TypeScript 7 (strict, ESM, `moduleResolution: bundler`), Prisma 7 with `@prisma/adapter-pg`, PostgreSQL, Zod 4, pnpm. Read the root [CLAUDE.md](../CLAUDE.md) invariants first. Structure details are in [docs/BACKEND-STRUCTURE.md](../docs/BACKEND-STRUCTURE.md).
 
 ## Docker
 
@@ -23,7 +23,7 @@ src/
   server.ts         # listen + graceful shutdown
   config/           # env.ts (Zod), database.ts, logger.ts
   common/           # constants, errors, middleware, types, utils, validators
-  modules/<name>/   # <name>.{controller,service,repository,routes,schema,types}.ts + index.ts
+  modules/<name>/   # constants/ controllers/ repositories/ routes/ schemas/ services/ types/ utils/ (+ index.ts at the module root), see Naming and style
   routes/           # index.ts (/api/health + /api/v1), health.routes.ts, v1/index.ts (module routers, auth first)
   prisma/client.ts  # PrismaClient singleton (withTransaction() arrives with the first repository)
   jobs/             # cleanup.job.ts, year allocation
@@ -84,6 +84,7 @@ Modules: auth, users, leave-types, balances, holidays, leave-requests, approvals
 
 ## Naming and style
 
-- Folders kebab-case. Files `<singular>.<layer>.ts`, for example `leave-requests/leave-request.service.ts`.
+- Folders kebab-case. Files `<singular>.<layer-or-concern>.ts` inside a layer folder, for example `leave-requests/services/leave-request.service.ts`.
+- A module is one folder per layer, and constants, types and utils each live in their own files: `constants/<name>.constants.ts` (numbers, caps, regexes, role lists, Prisma include objects), `types/<name>.types.ts` (every interface and type, including `z.infer` input types and repository parameter objects), `utils/<name>.<concern>.ts` (pure helpers: mappers, error factories, query builders, request or cookie helpers). Controllers, routes, schemas, services and repositories contain only their own layer: no top-level `const` (other than the exported router, repository object or schema), no `interface` or `type`, and no pure helper functions (a private service step that uses a repository is fine). Create a folder only when the module has something for it.
 - Import with the `@/` alias and no extension (`import { env } from '@/config/env'`); same-folder files may use `./Name`. No `any`. No `console.log` (use the pino logger).
 - Run `pnpm format` before committing. Hooks run lint-staged.

@@ -1,17 +1,8 @@
 import type { Db } from '@/prisma/client'
+import type { CreateRefreshTokenData } from '@/modules/auth/types/auth.types'
 
 export const refreshTokenRepository = {
-  create: (
-    db: Db,
-    data: {
-      userId: string
-      tokenHash: string
-      familyId: string
-      expiresAt: Date
-      userAgent?: string
-      ip?: string
-    },
-  ) => db.refreshToken.create({ data }),
+  create: (db: Db, data: CreateRefreshTokenData) => db.refreshToken.create({ data }),
 
   findByHash: (db: Db, tokenHash: string) => db.refreshToken.findUnique({ where: { tokenHash } }),
 
