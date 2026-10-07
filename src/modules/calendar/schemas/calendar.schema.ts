@@ -10,10 +10,8 @@ export const calendarQuerySchema = paginationQuerySchema.extend({
   managerId: z.uuid('Invalid manager').optional(),
   status: z.enum(['PENDING', 'APPROVED']).optional(),
 })
-export type CalendarQuery = z.infer<typeof calendarQuerySchema>
 
 export const summaryQuerySchema = paginationQuerySchema.extend({
   month,
   managerId: z.uuid('Invalid manager').optional(),
 })
-export type SummaryQuery = z.infer<typeof summaryQuerySchema>

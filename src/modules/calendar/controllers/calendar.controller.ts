@@ -1,7 +1,11 @@
 import type { Request, Response } from 'express'
 import { ok, paginated } from '@/common/utils/response'
-import type { CalendarQuery, SummaryQuery } from '@/modules/calendar/calendar.schema'
-import { getCalendar, getCalendarSummary, listTeams } from '@/modules/calendar/calendar.service'
+import type { CalendarQuery, SummaryQuery } from '@/modules/calendar/types/calendar.types'
+import {
+  getCalendar,
+  getCalendarSummary,
+  listTeams,
+} from '@/modules/calendar/services/calendar.service'
 
 export async function month(req: Request, res: Response): Promise<void> {
   const query = req.validated?.query as CalendarQuery

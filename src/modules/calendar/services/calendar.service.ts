@@ -1,42 +1,20 @@
-import { AppError } from '@/common/errors/AppError'
-import { ERROR_CODES } from '@/common/errors/errorCodes'
 import { monthBounds } from '@/common/utils/dates'
 import { buildPagination, toSkipTake } from '@/common/utils/pagination'
-import { Role } from '@/generated/prisma/enums'
 import { prisma } from '@/prisma/client'
-import { calendarRepository, type AbsenceRow } from '@/modules/calendar/calendar.repository'
-import type { CalendarQuery, SummaryQuery } from '@/modules/calendar/calendar.schema'
-import type { AbsenceItem, OverlapSummary, TeamDto } from '@/modules/calendar/calendar.types'
-
-interface Actor {
-  id: string
-  role: Role
-  managerId: string | null
-}
-
-function toItem(row: AbsenceRow): AbsenceItem {
-  return {
-    requestId: row.requestId,
-    userId: row.userId,
-    name: row.name,
-    leaveType: { code: row.typeCode, name: row.typeName },
-    startDate: row.startDate,
-    endDate: row.endDate,
-    status: row.status,
-  }
-}
-
-function resolveTeamScope(actor: Actor, requested: string | undefined): string | null {
-  if (actor.role === Role.HR_ADMIN) return requested ?? null
-  const own = actor.role === Role.MANAGER ? actor.id : actor.managerId
-  if (!own || (requested && requested !== own)) {
-    throw new AppError(ERROR_CODES.NOT_FOUND, 404, 'Team not found')
-  }
-  return own
-}
+import { calendarRepository } from '@/modules/calendar/repositories/calendar.repository'
+import type {
+  CalendarActor,
+  CalendarQuery,
+  OverlapRequester,
+  OverlapSummary,
+  SummaryQuery,
+  TeamDto,
+} from '@/modules/calendar/types/calendar.types'
+import { toItem } from '@/modules/calendar/utils/calendar.mappers'
+import { resolveTeamScope } from '@/modules/calendar/utils/calendar.scope'
 
 export async function getOverlaps(
-  requester: { id: string; managerId: string | null },
+  requester: OverlapRequester,
   startDate: string,
   endDate: string,
 ): Promise<OverlapSummary> {
@@ -52,7 +30,7 @@ export async function getOverlaps(
   return { overlapping: overlapping.map(toItem), peakConcurrent, teamSize }
 }
 
-export async function getCalendar(actor: Actor, query: CalendarQuery) {
+export async function getCalendar(actor: CalendarActor, query: CalendarQuery) {
   const teamLead = resolveTeamScope(actor, query.managerId)
   const { skip, take } = toSkipTake(query.page, query.limit)
   const { items, total } = await calendarRepository.findInMonth(
@@ -71,7 +49,7 @@ export async function listTeams(): Promise<TeamDto[]> {
   return calendarRepository.findTeams(prisma)
 }
 
-export async function getCalendarSummary(actor: Actor, query: SummaryQuery) {
+export async function getCalendarSummary(actor: CalendarActor, query: SummaryQuery) {
   const teamLead = resolveTeamScope(actor, query.managerId)
   const { skip, take } = toSkipTake(query.page, query.limit)
   const { items, total } = await calendarRepository.summarize(
