@@ -1,13 +1,13 @@
 import { Router } from 'express'
 import { validate } from '@/common/middleware/validate.middleware'
 import { idParamSchema } from '@/common/validators/common.schema'
-import * as leaveRequestController from '@/modules/leave-requests/leave-request.controller'
+import * as leaveRequestController from '@/modules/leave-requests/controllers/leave-request.controller'
 import {
   createLeaveRequestSchema,
   historyQuerySchema,
   listLeaveRequestsQuerySchema,
   updateLeaveRequestSchema,
-} from '@/modules/leave-requests/leave-request.schema'
+} from '@/modules/leave-requests/schemas/leave-request.schema'
 
 export const leaveRequestRouter = Router()
 

@@ -6,8 +6,8 @@ import type {
   HistoryQuery,
   ListLeaveRequestsQuery,
   UpdateLeaveRequestInput,
-} from '@/modules/leave-requests/leave-request.schema'
-import * as leaveRequestService from '@/modules/leave-requests/leave-request.service'
+} from '@/modules/leave-requests/types/leave-request.types'
+import * as leaveRequestService from '@/modules/leave-requests/services/leave-request.service'
 
 export async function preview(req: Request, res: Response): Promise<void> {
   const body = req.validated?.body as CreateLeaveRequestInput

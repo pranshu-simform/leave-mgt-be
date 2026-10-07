@@ -1,103 +1,45 @@
 import type { Prisma } from '@/generated/prisma/client'
-import type { EventAction, LeaveStatus, Role } from '@/generated/prisma/enums'
 import { isoToDate } from '@/common/utils/dates'
+import type { LeaveStatus } from '@/generated/prisma/enums'
 import type { Db } from '@/prisma/client'
-
-const withRelations = {
-  leaveType: {
-    select: { id: true, code: true, name: true, drawsFromBalance: true },
-  },
-  user: { select: { id: true, name: true, managerId: true } },
-} as const
-
-export type LeaveRequestRow = Prisma.LeaveRequestGetPayload<{
-  include: typeof withRelations
-}>
-
-function approverScope(actor: { id: string; role: Role }): Prisma.UserWhereInput {
-  return actor.role === 'HR_ADMIN'
-    ? { id: { not: actor.id } }
-    : { managerId: actor.id, id: { not: actor.id } }
-}
-
-function readScope(actor: { id: string; role: Role }): Prisma.LeaveRequestWhereInput {
-  return actor.role === 'HR_ADMIN'
-    ? {}
-    : { OR: [{ userId: actor.id }, { user: { managerId: actor.id } }] }
-}
-
-interface ListFilters {
-  userId: string
-  status?: LeaveStatus
-  year?: number
-  leaveTypeId?: string
-  from?: string
-}
-
-function listWhere({
-  userId,
-  status,
-  year,
-  leaveTypeId,
-  from,
-}: ListFilters): Prisma.LeaveRequestWhereInput {
-  return {
-    userId,
-    ...(status ? { status } : {}),
-    ...(leaveTypeId ? { leaveTypeId } : {}),
-    ...(from ? { endDate: { gte: isoToDate(from) } } : {}),
-    ...(year
-      ? {
-          startDate: {
-            gte: isoToDate(`${year}-01-01`),
-            lte: isoToDate(`${year}-12-31`),
-          },
-        }
-      : {}),
-  }
-}
+import { LEAVE_REQUEST_RELATIONS } from '@/modules/leave-requests/constants/leave-request.constants'
+import type {
+  Approver,
+  CreateEventData,
+  CreateLeaveRequestData,
+  DecisionStatus,
+  ListFilters,
+  OwnedRequestKey,
+  ScopeActor,
+  UpdateLeaveRequestData,
+  UpdateWhere,
+} from '@/modules/leave-requests/types/leave-request.types'
+import {
+  approverScope,
+  listWhere,
+  readScope,
+} from '@/modules/leave-requests/utils/leave-request.queries'
 
 export const leaveRequestRepository = {
-  create: (
-    db: Db,
-    data: {
-      userId: string
-      leaveTypeId: string
-      startDate: string
-      endDate: string
-      days: number
-      note: string | null
-    },
-  ) =>
+  create: (db: Db, data: CreateLeaveRequestData) =>
     db.leaveRequest.create({
       data: {
         ...data,
         startDate: isoToDate(data.startDate),
         endDate: isoToDate(data.endDate),
       },
-      include: withRelations,
+      include: LEAVE_REQUEST_RELATIONS,
     }),
 
-  createEvent: (
-    db: Db,
-    data: {
-      requestId: string
-      actorId: string
-      action: EventAction
-      fromStatus: LeaveStatus | null
-      toStatus: LeaveStatus
-      reason?: string
-      metadata?: Prisma.InputJsonValue
-    },
-  ) => db.leaveRequestEvent.create({ data }),
+  createEvent: (db: Db, data: CreateEventData) => db.leaveRequestEvent.create({ data }),
 
   findById: (db: Db, id: string) =>
-    db.leaveRequest.findUnique({ where: { id }, include: withRelations }),
+    db.leaveRequest.findUnique({ where: { id }, include: LEAVE_REQUEST_RELATIONS }),
 
-  findReadable: (db: Db, id: string, actor: { id: string; role: Role }) =>
+  findReadable: (db: Db, id: string, actor: ScopeActor) =>
     db.leaveRequest.findFirst({
       where: { id, ...readScope(actor) },
-      include: withRelations,
+      include: LEAVE_REQUEST_RELATIONS,
     }),
 
   listEvents: async (db: Db, requestId: string, skip: number, take: number) => {
@@ -118,7 +60,7 @@ export const leaveRequestRepository = {
   findOwned: (db: Db, id: string, userId: string) =>
     db.leaveRequest.findFirst({
       where: { id, userId },
-      include: withRelations,
+      include: LEAVE_REQUEST_RELATIONS,
     }),
 
   list: async (db: Db, filters: ListFilters, skip: number, take: number) => {
@@ -126,7 +68,7 @@ export const leaveRequestRepository = {
     const [items, total] = await Promise.all([
       db.leaveRequest.findMany({
         where,
-        include: withRelations,
+        include: LEAVE_REQUEST_RELATIONS,
         // Newest first, except the upcoming view (`from`), which reads soonest first.
         orderBy: [{ startDate: filters.from ? 'asc' : 'desc' }, { id: 'asc' }],
         skip,
@@ -137,16 +79,7 @@ export const leaveRequestRepository = {
     return { items, total }
   },
 
-  updateIfPending: async (
-    db: Db,
-    where: { id: string; userId: string; version: number },
-    data: {
-      startDate: string
-      endDate: string
-      days: number
-      note: string | null
-    },
-  ) => {
+  updateIfPending: async (db: Db, where: UpdateWhere, data: UpdateLeaveRequestData) => {
     const result = await db.leaveRequest.updateMany({
       where: { ...where, status: 'PENDING' },
       data: {
@@ -159,7 +92,7 @@ export const leaveRequestRepository = {
     return result.count === 1
   },
 
-  cancelIfPending: async (db: Db, where: { id: string; userId: string }) => {
+  cancelIfPending: async (db: Db, where: OwnedRequestKey) => {
     const result = await db.leaveRequest.updateMany({
       where: { ...where, status: 'PENDING' },
       data: { status: 'CANCELLED', version: { increment: 1 } },
@@ -167,15 +100,15 @@ export const leaveRequestRepository = {
     return result.count === 1
   },
 
-  findInApproverScope: (db: Db, id: string, actor: { id: string; role: Role }) =>
+  findInApproverScope: (db: Db, id: string, actor: Approver) =>
     db.leaveRequest.findFirst({
       where: { id, user: approverScope(actor) },
-      include: withRelations,
+      include: LEAVE_REQUEST_RELATIONS,
     }),
 
   listForApprover: async (
     db: Db,
-    actor: { id: string; role: Role },
+    actor: Approver,
     status: LeaveStatus,
     skip: number,
     take: number,
@@ -187,7 +120,7 @@ export const leaveRequestRepository = {
     const [items, total] = await Promise.all([
       db.leaveRequest.findMany({
         where,
-        include: withRelations,
+        include: LEAVE_REQUEST_RELATIONS,
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         skip,
         take,
@@ -197,12 +130,7 @@ export const leaveRequestRepository = {
     return { items, total }
   },
 
-  decideIfPending: async (
-    db: Db,
-    id: string,
-    actor: { id: string; role: Role },
-    status: 'APPROVED' | 'REJECTED',
-  ) => {
+  decideIfPending: async (db: Db, id: string, actor: Approver, status: DecisionStatus) => {
     const result = await db.leaveRequest.updateMany({
       where: { id, status: 'PENDING', user: approverScope(actor) },
       data: {
@@ -227,7 +155,7 @@ export const leaveRequestRepository = {
     return result.count === 1
   },
 
-  cancelIfApproved: async (db: Db, where: { id: string; userId: string }, today: string) => {
+  cancelIfApproved: async (db: Db, where: OwnedRequestKey, today: string) => {
     const result = await db.leaveRequest.updateMany({
       where: {
         ...where,

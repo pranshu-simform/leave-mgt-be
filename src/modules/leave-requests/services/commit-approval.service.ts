@@ -1,18 +1,10 @@
 import { AppError } from '@/common/errors/AppError'
 import { ERROR_CODES } from '@/common/errors/errorCodes'
 import { dateToIso, isoYear } from '@/common/utils/dates'
-import type { Role } from '@/generated/prisma/enums'
 import type { Db } from '@/prisma/client'
 import { deductBalance } from '@/modules/balances'
-import {
-  leaveRequestRepository,
-  type LeaveRequestRow,
-} from '@/modules/leave-requests/leave-request.repository'
-
-export interface Approver {
-  id: string
-  role: Role
-}
+import { leaveRequestRepository } from '@/modules/leave-requests/repositories/leave-request.repository'
+import type { Approver, LeaveRequestRow } from '@/modules/leave-requests/types/leave-request.types'
 
 export async function explainDecisionMiss(db: Db, id: string, actor: Approver): Promise<never> {
   if (await leaveRequestRepository.findOwned(db, id, actor.id)) {
