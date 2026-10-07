@@ -8,3 +8,5 @@ export const LEAVE_REQUEST_RELATIONS = {
   },
   user: { select: { id: true, name: true, managerId: true } },
 } as const
+
+export const NO_OVERLAP_CONSTRAINT = 'leave_requests_no_overlap'

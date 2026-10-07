@@ -9,8 +9,8 @@ import type {
 } from '@/modules/balances/types/balance.types'
 import { findUserInReadScope } from '@/modules/users'
 
-export function allocateYear(year: number): Promise<number> {
-  return balanceRepository.allocateYear(prisma, year)
+export function allocateYear(year: number, db: Db = prisma): Promise<number> {
+  return balanceRepository.allocateYear(db, year)
 }
 
 export function findBalance(userId: string, leaveTypeId: string, year: number) {

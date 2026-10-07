@@ -11,3 +11,14 @@ export interface HolidayDateRow {
 }
 
 export type HolidayQuery = z.infer<typeof holidayQuerySchema>
+
+export interface AdminHolidayDto {
+  id: string
+  date: string
+  name: string
+}
+
+export interface CreateHolidayData {
+  date: string
+  name: string
+}
