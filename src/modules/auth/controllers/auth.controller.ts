@@ -1,10 +1,10 @@
 import type { Request, Response } from 'express'
 import { COOKIE_NAMES } from '@/common/constants'
 import { ok } from '@/common/utils/response'
-import { clearSessionCookies, setSessionCookies } from '@/modules/auth/auth.cookies'
-import type { ChangePasswordInput, LoginInput } from '@/modules/auth/auth.schema'
-import * as authService from '@/modules/auth/auth.service'
-import type { RequestMeta } from '@/modules/auth/auth.types'
+import { clearSessionCookies, setSessionCookies } from '@/modules/auth/utils/auth.cookies'
+import type { ChangePasswordInput, LoginInput } from '@/modules/auth/schemas/auth.schema'
+import * as authService from '@/modules/auth/services/auth.service'
+import type { RequestMeta } from '@/modules/auth/types/auth.types'
 import { toPublicUser } from '@/modules/users'
 
 function requestMeta(req: Request): RequestMeta {

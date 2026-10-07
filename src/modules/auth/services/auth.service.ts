@@ -5,9 +5,9 @@ import { AppError } from '@/common/errors/AppError'
 import { ERROR_CODES } from '@/common/errors/errorCodes'
 import { signAccessToken } from '@/common/utils/jwt'
 import { prisma, withTransaction, type Db } from '@/prisma/client'
-import { refreshTokenRepository } from '@/modules/auth/refresh-token.repository'
-import type { ChangePasswordInput, LoginInput } from '@/modules/auth/auth.schema'
-import type { IssuedSession, RequestMeta } from '@/modules/auth/auth.types'
+import { refreshTokenRepository } from '@/modules/auth/repositories/refresh-token.repository'
+import type { ChangePasswordInput, LoginInput } from '@/modules/auth/schemas/auth.schema'
+import type { IssuedSession, RequestMeta } from '@/modules/auth/types/auth.types'
 import {
   findUserByEmail,
   findUserById,
