@@ -6,3 +6,8 @@ export interface PublicUser {
   name: string
   role: Role
 }
+
+export interface UserActor {
+  id: string
+  role: Role
+}

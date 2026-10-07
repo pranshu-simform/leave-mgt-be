@@ -1,12 +1,12 @@
-import type { Role } from '@/generated/prisma/enums'
 import type { Db } from '@/prisma/client'
+import type { UserActor } from '@/modules/users/types/user.types'
 
 export const userRepository = {
   findByEmail: (db: Db, email: string) => db.user.findUnique({ where: { email } }),
 
   findById: (db: Db, id: string) => db.user.findUnique({ where: { id } }),
 
-  findInReadScope: (db: Db, id: string, actor: { id: string; role: Role }) =>
+  findInReadScope: (db: Db, id: string, actor: UserActor) =>
     db.user.findFirst({
       where: {
         id,
