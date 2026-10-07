@@ -24,7 +24,7 @@ const result = await db.leaveRequest.updateMany({
 })
 if (result.count !== 1) await explainDecisionMiss(db, id, actor) // 403 own request, 404 out of scope, 409 ALREADY_DECIDED
 
-// 2. balance guard, same transaction (balance.repository.ts, called through deductBalance)
+// 2. balance guard, same transaction (balances/repositories/balance.repository.ts, called through deductBalance)
 const rows = await db.$queryRaw<{ id: string }[]>`
   UPDATE leave_balances SET used = used + ${days}::int
   WHERE user_id = ${userId}::uuid AND leave_type_id = ${typeId}::uuid AND year = ${year}::int

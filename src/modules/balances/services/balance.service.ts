@@ -1,9 +1,12 @@
 import { AppError } from '@/common/errors/AppError'
 import { ERROR_CODES } from '@/common/errors/errorCodes'
-import { Role } from '@/generated/prisma/enums'
 import { prisma, type Db } from '@/prisma/client'
-import { balanceRepository } from '@/modules/balances/balance.repository'
-import type { BalanceDto } from '@/modules/balances/balance.types'
+import { balanceRepository } from '@/modules/balances/repositories/balance.repository'
+import type {
+  BalanceActor,
+  BalanceChange,
+  BalanceDto,
+} from '@/modules/balances/types/balance.types'
 import { findUserInReadScope } from '@/modules/users'
 
 export function allocateYear(year: number): Promise<number> {
@@ -29,15 +32,6 @@ export async function getBalances(userId: string, year: number): Promise<Balance
     remaining: row.allowance - row.used,
     pendingDays: pending.get(row.leaveTypeId) ?? 0,
   }))
-}
-
-interface BalanceChange {
-  userId: string
-  leaveTypeId: string
-  year: number
-  days: number
-  requestId: string
-  actorId: string | null
 }
 
 export async function deductBalance(tx: Db, change: BalanceChange): Promise<void> {
@@ -73,7 +67,7 @@ export async function refundBalance(tx: Db, change: BalanceChange): Promise<void
 }
 
 export async function getBalancesForUser(
-  actor: { id: string; role: Role },
+  actor: BalanceActor,
   targetUserId: string,
   year: number,
 ): Promise<BalanceDto[]> {

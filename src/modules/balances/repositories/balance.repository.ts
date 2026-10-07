@@ -1,19 +1,15 @@
-import type { LedgerReason } from '@/generated/prisma/enums'
 import { isoToDate } from '@/common/utils/dates'
 import type { Db } from '@/prisma/client'
-
-const MAX_BALANCES = 100
-
-interface BalanceKey {
-  userId: string
-  leaveTypeId: string
-  year: number
-  days: number
-}
+import { MAX_BALANCES } from '@/modules/balances/constants/balance.constants'
+import type {
+  BalanceIdRow,
+  BalanceKey,
+  LedgerEntryData,
+} from '@/modules/balances/types/balance.types'
 
 export const balanceRepository = {
   deduct: async (db: Db, { userId, leaveTypeId, year, days }: BalanceKey) => {
-    const rows = await db.$queryRaw<{ id: string }[]>`
+    const rows = await db.$queryRaw<BalanceIdRow[]>`
       UPDATE leave_balances SET used = used + ${days}::int, updated_at = now()
       WHERE user_id = ${userId}::uuid AND leave_type_id = ${leaveTypeId}::uuid
         AND year = ${year}::int AND used + ${days}::int <= allowance
@@ -22,7 +18,7 @@ export const balanceRepository = {
   },
 
   refund: async (db: Db, { userId, leaveTypeId, year, days }: BalanceKey) => {
-    const rows = await db.$queryRaw<{ id: string }[]>`
+    const rows = await db.$queryRaw<BalanceIdRow[]>`
       UPDATE leave_balances SET used = used - ${days}::int, updated_at = now()
       WHERE user_id = ${userId}::uuid AND leave_type_id = ${leaveTypeId}::uuid
         AND year = ${year}::int AND used - ${days}::int >= 0
@@ -30,16 +26,7 @@ export const balanceRepository = {
     return rows[0]?.id ?? null
   },
 
-  addLedgerEntry: (
-    db: Db,
-    data: {
-      balanceId: string
-      delta: number
-      reason: LedgerReason
-      requestId: string
-      actorId: string | null
-    },
-  ) => db.leaveBalanceLedger.create({ data }),
+  addLedgerEntry: (db: Db, data: LedgerEntryData) => db.leaveBalanceLedger.create({ data }),
 
   findOne: (db: Db, userId: string, leaveTypeId: string, year: number) =>
     db.leaveBalance.findUnique({
