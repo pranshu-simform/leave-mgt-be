@@ -1,9 +1,5 @@
 import type { Db } from '@/prisma/client'
-
-export interface HolidayRow {
-  date: string
-  name: string
-}
+import type { HolidayDateRow, HolidayRow } from '@/modules/holidays/types/holiday.types'
 
 export const holidayRepository = {
   findBetween: (db: Db, startDate: string, endDate: string) =>
@@ -14,7 +10,7 @@ export const holidayRepository = {
       ORDER BY date`,
 
   findDatesBetween: async (db: Db, startDate: string, endDate: string): Promise<string[]> => {
-    const rows = await db.$queryRaw<{ date: string }[]>`
+    const rows = await db.$queryRaw<HolidayDateRow[]>`
       SELECT to_char(date, 'YYYY-MM-DD') AS date
       FROM public_holidays
       WHERE date BETWEEN ${startDate}::date AND ${endDate}::date`
