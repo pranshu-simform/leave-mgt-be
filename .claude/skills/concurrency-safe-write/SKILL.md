@@ -9,10 +9,10 @@ The brief's hardest case: two approvals at the same instant must not both succee
 
 ## The pattern: guard in the `WHERE`, not in an `if`
 
-Never read a row, check it in JS, then write. Put the condition in the `UPDATE` and look at the row count. The real code is `leave-requests/commit-approval.ts` and the guarded statements in `leave-request.repository.ts` and `balance.repository.ts`.
+Never read a row, check it in JS, then write. Put the condition in the `UPDATE` and look at the row count. The real code is `leave-requests/services/commit-approval.service.ts` and the guarded statements in `leave-requests/repositories/leave-request.repository.ts` and `balances/repositories/balance.repository.ts`.
 
 ```ts
-// 1. state guard + scope + self-approval, in one statement (leave-request.repository.ts)
+// 1. state guard + scope + self-approval, in one statement (leave-requests/repositories/leave-request.repository.ts)
 const result = await db.leaveRequest.updateMany({
   where: { id, status: 'PENDING', user: approverScope(actor) }, // scope: managerId = actor (HR: anyone), never the actor
   data: {

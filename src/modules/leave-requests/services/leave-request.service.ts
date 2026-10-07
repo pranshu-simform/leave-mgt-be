@@ -2,7 +2,6 @@ import { AppError } from '@/common/errors/AppError'
 import { ERROR_CODES } from '@/common/errors/errorCodes'
 import { dateToIso, isoYear, todayIso } from '@/common/utils/dates'
 import { buildPagination, toSkipTake } from '@/common/utils/pagination'
-import { Role, type LeaveStatus } from '@/generated/prisma/enums'
 import type { LeaveType } from '@/generated/prisma/client'
 import { prisma, withTransaction, type Db } from '@/prisma/client'
 import { findBalance, refundBalance } from '@/modules/balances'
@@ -12,65 +11,30 @@ import { evaluateLeaveRules, getActiveLeaveType } from '@/modules/leave-types'
 import {
   commitApproval,
   explainDecisionMiss,
-  type Approver,
-} from '@/modules/leave-requests/commit-approval'
-import {
-  leaveRequestRepository,
-  type LeaveRequestRow,
-} from '@/modules/leave-requests/leave-request.repository'
+} from '@/modules/leave-requests/services/commit-approval.service'
+import { leaveRequestRepository } from '@/modules/leave-requests/repositories/leave-request.repository'
 import type {
+  Approver,
+  ApproverQuery,
+  CheckInput,
   CreateLeaveRequestInput,
+  EvaluatedRequest,
   HistoryQuery,
-  ListLeaveRequestsQuery,
-  UpdateLeaveRequestInput,
-} from '@/modules/leave-requests/leave-request.schema'
-import type {
+  LeaveRequestActor,
   LeaveRequestDto,
+  ListLeaveRequestsQuery,
   RequestCheck,
   RequestEventDto,
+  RequestInput,
   RequestViolation,
-} from '@/modules/leave-requests/leave-request.types'
-
-interface Actor {
-  id: string
-  role: Role
-  managerId: string | null
-}
-
-function toDto(row: LeaveRequestRow): LeaveRequestDto {
-  return {
-    id: row.id,
-    leaveType: {
-      id: row.leaveType.id,
-      code: row.leaveType.code,
-      name: row.leaveType.name,
-    },
-    startDate: dateToIso(row.startDate),
-    endDate: dateToIso(row.endDate),
-    days: row.days,
-    note: row.note,
-    status: row.status,
-    version: row.version,
-    requester: { id: row.user.id, name: row.user.name },
-    decidedAt: row.decidedAt ? row.decidedAt.toISOString() : null,
-    createdAt: row.createdAt.toISOString(),
-  }
-}
-
-function notFound(): AppError {
-  return new AppError(ERROR_CODES.NOT_FOUND, 404, 'Leave request not found')
-}
+  UpdateLeaveRequestInput,
+} from '@/modules/leave-requests/types/leave-request.types'
+import { notFound } from '@/modules/leave-requests/utils/leave-request.errors'
+import { toDto } from '@/modules/leave-requests/utils/leave-request.mappers'
+import { throwIfInvalid } from '@/modules/leave-requests/utils/leave-request.validation'
 
 // Loads the leave type, then runs every check. Nothing here writes.
-async function evaluateRequest(
-  userId: string,
-  input: {
-    leaveTypeId: string
-    startDate: string
-    endDate: string
-    note?: string
-  },
-): Promise<{ type: LeaveType; check: RequestCheck }> {
+async function evaluateRequest(userId: string, input: RequestInput): Promise<EvaluatedRequest> {
   const type = await getActiveLeaveType(input.leaveTypeId)
   if (!type) {
     throw new AppError(ERROR_CODES.VALIDATION_ERROR, 400, 'Invalid request', [
@@ -83,7 +47,7 @@ async function evaluateRequest(
 async function checkAgainstType(
   type: LeaveType,
   userId: string,
-  input: { startDate: string; endDate: string; note?: string },
+  input: CheckInput,
 ): Promise<RequestCheck> {
   const year = isoYear(input.startDate)
   if (year !== isoYear(input.endDate)) {
@@ -141,19 +105,10 @@ async function checkAgainstType(
   return { days, violations, balance }
 }
 
-function throwIfInvalid(check: RequestCheck): void {
-  const [first] = check.violations
-  if (first) {
-    throw new AppError(
-      first.code,
-      422,
-      first.message,
-      check.violations.map(({ field, message }) => ({ field, message })),
-    )
-  }
-}
-
-export async function previewLeaveRequest(actor: Actor, input: CreateLeaveRequestInput) {
+export async function previewLeaveRequest(
+  actor: LeaveRequestActor,
+  input: CreateLeaveRequestInput,
+) {
   const { check } = await evaluateRequest(actor.id, input)
 
   const overlaps = check.days > 0 ? await getOverlaps(actor, input.startDate, input.endDate) : null
@@ -161,7 +116,7 @@ export async function previewLeaveRequest(actor: Actor, input: CreateLeaveReques
 }
 
 export async function submitLeaveRequest(
-  actor: Actor,
+  actor: LeaveRequestActor,
   input: CreateLeaveRequestInput,
 ): Promise<LeaveRequestDto> {
   const { type, check } = await evaluateRequest(actor.id, input)
@@ -189,7 +144,7 @@ export async function submitLeaveRequest(
   return toDto(created)
 }
 
-export async function listMyLeaveRequests(actor: Actor, query: ListLeaveRequestsQuery) {
+export async function listMyLeaveRequests(actor: LeaveRequestActor, query: ListLeaveRequestsQuery) {
   const { page, limit, ...filters } = query
   const { skip, take } = toSkipTake(page, limit)
   const { items, total } = await leaveRequestRepository.list(
@@ -204,13 +159,16 @@ export async function listMyLeaveRequests(actor: Actor, query: ListLeaveRequests
   }
 }
 
-export async function getLeaveRequest(actor: Actor, id: string): Promise<LeaveRequestDto> {
+export async function getLeaveRequest(
+  actor: LeaveRequestActor,
+  id: string,
+): Promise<LeaveRequestDto> {
   const row = await leaveRequestRepository.findReadable(prisma, id, actor)
   if (!row) throw notFound()
   return toDto(row)
 }
 
-export async function getRequestHistory(actor: Actor, id: string, query: HistoryQuery) {
+export async function getRequestHistory(actor: LeaveRequestActor, id: string, query: HistoryQuery) {
   if (!(await leaveRequestRepository.findReadable(prisma, id, actor))) throw notFound()
 
   const { skip, take } = toSkipTake(query.page, query.limit)
@@ -248,7 +206,7 @@ async function explainNoMatch(db: Db, id: string, userId: string): Promise<never
 }
 
 export async function updateLeaveRequest(
-  actor: Actor,
+  actor: LeaveRequestActor,
   id: string,
   input: UpdateLeaveRequestInput,
 ): Promise<LeaveRequestDto> {
@@ -301,7 +259,10 @@ export async function updateLeaveRequest(
   return toDto(updated!)
 }
 
-export async function cancelLeaveRequest(actor: Actor, id: string): Promise<LeaveRequestDto> {
+export async function cancelLeaveRequest(
+  actor: LeaveRequestActor,
+  id: string,
+): Promise<LeaveRequestDto> {
   const cancelled = await withTransaction(async (tx) => {
     let fromStatus: 'PENDING' | 'APPROVED' = 'PENDING'
     const wasPending = await leaveRequestRepository.cancelIfPending(tx, {
@@ -377,10 +338,7 @@ export async function getRequestOverlaps(actor: Approver, id: string) {
   return getOverlaps(row.user, dateToIso(row.startDate), dateToIso(row.endDate))
 }
 
-export async function listRequestsForApprover(
-  actor: Approver,
-  query: { status: LeaveStatus; page: number; limit: number },
-) {
+export async function listRequestsForApprover(actor: Approver, query: ApproverQuery) {
   const { skip, take } = toSkipTake(query.page, query.limit)
   const { items, total } = await leaveRequestRepository.listForApprover(
     prisma,
