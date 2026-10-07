@@ -1,3 +1,3 @@
-export { calendarRouter } from '@/modules/calendar/calendar.routes'
-export { getOverlaps } from '@/modules/calendar/calendar.service'
-export type { OverlapSummary } from '@/modules/calendar/calendar.types'
+export { calendarRouter } from '@/modules/calendar/routes/calendar.routes'
+export { getOverlaps } from '@/modules/calendar/services/calendar.service'
+export type { OverlapSummary } from '@/modules/calendar/types/calendar.types'

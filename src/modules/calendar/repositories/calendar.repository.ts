@@ -1,65 +1,21 @@
 import { Prisma } from '@/generated/prisma/client'
 import type { Db } from '@/prisma/client'
-import type { CalendarStatus } from '@/modules/calendar/calendar.types'
-
-const MAX_OVERLAPPING = 100
-const MAX_TEAMS = 200
-
-export interface AbsenceRow {
-  requestId: string
-  userId: string
-  name: string
-  typeCode: string
-  typeName: string
-  startDate: string
-  endDate: string
-  status: CalendarStatus
-}
-
-export interface TeamRow {
-  managerId: string
-  managerName: string
-  teamSize: number
-}
-
-export interface SummaryRow {
-  date: string
-  managerId: string
-  managerName: string
-  teamSize: number
-  pending: number
-  approved: number
-}
-
-interface Window {
-  from: string
-  to: string
-}
-
-interface CalendarFilter extends Window {
-  managerId: string | null
-  status?: CalendarStatus
-}
-
-function calendarWhere({ managerId, status, from, to }: CalendarFilter) {
-  return Prisma.sql`u.is_active
-    ${managerId ? Prisma.sql`AND u.manager_id = ${managerId}::uuid` : Prisma.empty}
-    AND r.status IN ('PENDING', 'APPROVED')
-    ${status ? Prisma.sql`AND r.status = ${status}::"LeaveStatus"` : Prisma.empty}
-    AND daterange(r.start_date, r.end_date, '[]') && daterange(${from}::date, ${to}::date, '[]')`
-}
-
-function weekdays({ from, to }: Window) {
-  return Prisma.sql`SELECT d.day::date AS day
-    FROM generate_series(${from}::timestamp, ${to}::timestamp, interval '1 day') AS d(day)
-    WHERE extract(isodow FROM d.day) < 6`
-}
+import { MAX_OVERLAPPING, MAX_TEAMS } from '@/modules/calendar/constants/calendar.constants'
+import type {
+  AbsenceRow,
+  CalendarFilter,
+  OverlapKey,
+  PeakRow,
+  SizeRow,
+  SummaryFilter,
+  SummaryRow,
+  TeamRow,
+  TotalRow,
+} from '@/modules/calendar/types/calendar.types'
+import { calendarWhere, weekdays } from '@/modules/calendar/utils/calendar.queries'
 
 export const calendarRepository = {
-  findOverlapping: (
-    db: Db,
-    { managerId, userId, from, to }: Window & { managerId: string; userId: string },
-  ) =>
+  findOverlapping: (db: Db, { managerId, userId, from, to }: OverlapKey) =>
     db.$queryRaw<AbsenceRow[]>`
       SELECT r.id AS "requestId", u.id AS "userId", u.name,
         lt.code AS "typeCode", lt.name AS "typeName",
@@ -73,11 +29,8 @@ export const calendarRepository = {
       ORDER BY r.start_date, r.id
       LIMIT ${MAX_OVERLAPPING}`,
 
-  peakConcurrent: async (
-    db: Db,
-    { managerId, userId, from, to }: Window & { managerId: string; userId: string },
-  ) => {
-    const rows = await db.$queryRaw<{ peak: number }[]>`
+  peakConcurrent: async (db: Db, { managerId, userId, from, to }: OverlapKey) => {
+    const rows = await db.$queryRaw<PeakRow[]>`
       WITH others AS (
         SELECT r.start_date, r.end_date
         FROM leave_requests r
@@ -105,7 +58,7 @@ export const calendarRepository = {
       LIMIT ${MAX_TEAMS}`,
 
   teamSize: async (db: Db, managerId: string) => {
-    const rows = await db.$queryRaw<{ size: number }[]>`
+    const rows = await db.$queryRaw<SizeRow[]>`
       SELECT count(*)::int AS size FROM users WHERE manager_id = ${managerId}::uuid AND is_active`
     return rows[0]?.size ?? 0
   },
@@ -125,7 +78,7 @@ export const calendarRepository = {
         WHERE ${where}
         ORDER BY r.start_date, r.id
         LIMIT ${take} OFFSET ${skip}`,
-      db.$queryRaw<{ total: number }[]>`
+      db.$queryRaw<TotalRow[]>`
         SELECT count(*)::int AS total
         FROM leave_requests r
         JOIN users u ON u.id = r.user_id
@@ -134,12 +87,7 @@ export const calendarRepository = {
     return { items, total: counts[0]?.total ?? 0 }
   },
 
-  summarize: async (
-    db: Db,
-    { managerId, from, to }: Window & { managerId: string | null },
-    skip: number,
-    take: number,
-  ) => {
+  summarize: async (db: Db, { managerId, from, to }: SummaryFilter, skip: number, take: number) => {
     const source = Prisma.sql`
       FROM (${weekdays({ from, to })}) days
       JOIN leave_requests r ON r.status IN ('PENDING', 'APPROVED')
@@ -163,7 +111,7 @@ export const calendarRepository = {
           p.pending, p.approved
         FROM page p
         ORDER BY p.day, p.manager_id`,
-      db.$queryRaw<{ total: number }[]>`
+      db.$queryRaw<TotalRow[]>`
         SELECT count(*)::int AS total FROM (
           SELECT 1 ${source} GROUP BY days.day, lead.id
         ) g`,
