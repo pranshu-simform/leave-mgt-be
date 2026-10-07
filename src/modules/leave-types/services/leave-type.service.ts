@@ -1,6 +1,6 @@
 import { prisma } from '@/prisma/client'
-import { leaveTypeRepository } from '@/modules/leave-types/leave-type.repository'
-import type { LeaveTypeDto } from '@/modules/leave-types/leave-type.types'
+import { leaveTypeRepository } from '@/modules/leave-types/repositories/leave-type.repository'
+import type { LeaveTypeDto } from '@/modules/leave-types/types/leave-type.types'
 
 export function getActiveLeaveType(id: string) {
   return leaveTypeRepository.findActiveById(prisma, id)

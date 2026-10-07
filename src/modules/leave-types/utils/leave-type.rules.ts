@@ -1,29 +1,9 @@
-import type { ErrorCode } from '@/common/errors/errorCodes'
 import { diffDays } from '@/common/utils/dates'
-import type { LeaveType } from '@/generated/prisma/client'
-
-export type LeaveRuleCode = Extract<
-  ErrorCode,
-  'RETROACTIVE_NOT_ALLOWED' | 'NOTICE_TOO_SHORT' | 'MAX_DAYS_EXCEEDED' | 'NOTE_REQUIRED'
->
-
-export interface LeaveRuleViolation {
-  code: LeaveRuleCode
-  field: string
-  message: string
-}
-
-export interface LeaveRuleInput {
-  startDate: string
-  days: number
-  note?: string | null
-  today: string
-}
-
-type LeaveRuleType = Pick<
-  LeaveType,
-  'allowRetroactive' | 'minNoticeDays' | 'maxConsecutiveDays' | 'requiresNote'
->
+import type {
+  LeaveRuleInput,
+  LeaveRuleType,
+  LeaveRuleViolation,
+} from '@/modules/leave-types/types/leave-type.types'
 
 export function evaluateLeaveRules(
   type: LeaveRuleType,

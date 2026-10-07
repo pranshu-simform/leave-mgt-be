@@ -1,6 +1,5 @@
 import type { Db } from '@/prisma/client'
-
-const MAX_LEAVE_TYPES = 100
+import { MAX_LEAVE_TYPES } from '@/modules/leave-types/constants/leave-type.constants'
 
 export const leaveTypeRepository = {
   findActiveById: (db: Db, id: string) => db.leaveType.findFirst({ where: { id, isActive: true } }),
