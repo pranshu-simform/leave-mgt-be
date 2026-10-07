@@ -1,8 +1,8 @@
 import { Router } from 'express'
 import { createRateLimiter } from '@/common/middleware/rateLimit.middleware'
 import { validate } from '@/common/middleware/validate.middleware'
-import * as authController from '@/modules/auth/auth.controller'
-import { changePasswordSchema, loginSchema } from '@/modules/auth/auth.schema'
+import * as authController from '@/modules/auth/controllers/auth.controller'
+import { changePasswordSchema, loginSchema } from '@/modules/auth/schemas/auth.schema'
 
 export const authPublicRouter = Router()
 authPublicRouter.post(

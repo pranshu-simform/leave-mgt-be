@@ -6,7 +6,7 @@ import {
   REFRESH_TOKEN_TTL_SECONDS,
 } from '@/common/constants'
 import { env } from '@/config/env'
-import type { IssuedSession } from '@/modules/auth/auth.types'
+import type { IssuedSession } from '@/modules/auth/types/auth.types'
 
 function baseOptions(path: string): CookieOptions {
   return { httpOnly: true, sameSite: 'none', secure: env.COOKIE_SECURE, path }
