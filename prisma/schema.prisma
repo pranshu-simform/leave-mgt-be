@@ -33,6 +33,7 @@ enum LedgerReason {
   ALLOCATION
   DEDUCT
   REFUND
+  ADJUSTMENT
 }
 
 model User {
@@ -132,12 +133,14 @@ model LeaveBalanceLedger {
   reason    LedgerReason
   requestId String?      @map("request_id") @db.Uuid
   actorId   String?      @map("actor_id") @db.Uuid
+  note      String?
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
 
   balance LeaveBalance  @relation(fields: [balanceId], references: [id])
   request LeaveRequest? @relation(fields: [requestId], references: [id], onDelete: Restrict)
   actor   User?         @relation(fields: [actorId], references: [id], onDelete: Restrict)
 
+  @@index([balanceId])
   @@map("leave_balance_ledger")
 }
 

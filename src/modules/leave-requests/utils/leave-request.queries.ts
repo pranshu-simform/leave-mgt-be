@@ -1,6 +1,10 @@
 import type { Prisma } from '@/generated/prisma/client'
 import { isoToDate } from '@/common/utils/dates'
-import type { ListFilters, ScopeActor } from '@/modules/leave-requests/types/leave-request.types'
+import type {
+  AdminListFilters,
+  ListFilters,
+  ScopeActor,
+} from '@/modules/leave-requests/types/leave-request.types'
 
 export function approverScope(actor: ScopeActor): Prisma.UserWhereInput {
   return actor.role === 'HR_ADMIN'
@@ -14,15 +18,13 @@ export function readScope(actor: ScopeActor): Prisma.LeaveRequestWhereInput {
     : { OR: [{ userId: actor.id }, { user: { managerId: actor.id } }] }
 }
 
-export function listWhere({
-  userId,
+function filterWhere({
   status,
   year,
   leaveTypeId,
   from,
-}: ListFilters): Prisma.LeaveRequestWhereInput {
+}: Omit<ListFilters, 'userId'>): Prisma.LeaveRequestWhereInput {
   return {
-    userId,
     ...(status ? { status } : {}),
     ...(leaveTypeId ? { leaveTypeId } : {}),
     ...(from ? { endDate: { gte: isoToDate(from) } } : {}),
@@ -35,4 +37,16 @@ export function listWhere({
         }
       : {}),
   }
+}
+
+export function listWhere({ userId, ...filters }: ListFilters): Prisma.LeaveRequestWhereInput {
+  return { userId, ...filterWhere(filters) }
+}
+
+// Every person's requests. Only HR reaches this (the admin router), so there is no scope.
+export function adminListWhere({
+  userId,
+  ...filters
+}: AdminListFilters): Prisma.LeaveRequestWhereInput {
+  return { ...(userId ? { userId } : {}), ...filterWhere(filters) }
 }

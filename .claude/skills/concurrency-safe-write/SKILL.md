@@ -44,7 +44,7 @@ Then, in the same transaction, `deductBalance` writes the `leave_balance_ledger`
 
 ## Rules
 
-- All balance changes go through `deductBalance()` (called by `commitApproval()`), `refundBalance()` and, later, `adjust()`, each writing a ledger row. Never `UPDATE leave_balances` anywhere else.
+- All balance changes go through `deductBalance()` (called by `commitApproval()`), `refundBalance()`, `adjustBalance()` (HR, with a note) and `allocateYear()`, each writing a ledger row. Never `UPDATE leave_balances` anywhere else.
 - Use the stored `days` snapshot on the request for deduction and refund. Never recompute from holidays.
 - Do not use `SELECT … FOR UPDATE` followed by JS checks as a substitute. If you need a lock, take it in a consistent order and still guard in the `WHERE`.
 

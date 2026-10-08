@@ -29,8 +29,54 @@ export interface LedgerEntryData {
   balanceId: string
   delta: number
   reason: LedgerReason
-  requestId: string
+  requestId?: string
   actorId: string | null
+  note?: string
+}
+
+export interface AdjustBalanceData {
+  userId: string
+  leaveTypeId: string
+  year: number
+  delta: number
+  note: string
+}
+
+export interface AllocationResult {
+  year: number
+  created: number
+}
+
+// One drifting balance as the reconcile statement returns it (raw column names).
+export interface DriftRow {
+  balance_id: string
+  user_id: string
+  user_name: string
+  leave_type_id: string
+  leave_type_code: string
+  leave_type_name: string
+  allowance: number
+  expected_allowance: number
+  used: number
+  expected_used: number
+  drift_total: number
+}
+
+export interface DriftDto {
+  balanceId: string
+  user: { id: string; name: string }
+  leaveType: { id: string; code: string; name: string }
+  allowance: number
+  expectedAllowance: number
+  used: number
+  expectedUsed: number
+}
+
+export interface ReconcileReportDto {
+  year: number
+  checked: number
+  driftCount: number
+  drifts: DriftDto[]
 }
 
 export interface BalanceIdRow {

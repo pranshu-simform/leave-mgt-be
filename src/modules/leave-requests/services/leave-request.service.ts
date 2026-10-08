@@ -14,6 +14,7 @@ import {
 } from '@/modules/leave-requests/services/commit-approval.service'
 import { leaveRequestRepository } from '@/modules/leave-requests/repositories/leave-request.repository'
 import type {
+  AdminListFilters,
   Approver,
   ApproverQuery,
   CheckInput,
@@ -355,4 +356,10 @@ export async function listRequestsForApprover(actor: Approver, query: ApproverQu
     items: items.map(toDto),
     pagination: buildPagination(query.page, query.limit, total),
   }
+}
+
+export async function listAllRequests(filters: AdminListFilters, page: number, limit: number) {
+  const { skip, take } = toSkipTake(page, limit)
+  const { items, total } = await leaveRequestRepository.listAll(prisma, filters, skip, take)
+  return { items: items.map(toDto), pagination: buildPagination(page, limit, total) }
 }

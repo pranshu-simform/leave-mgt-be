@@ -1,8 +1,11 @@
 export { balanceRouter } from '@/modules/balances/routes/balance.routes'
 export {
+  adjustBalance,
+  allocateBalances,
   allocateYear,
   deductBalance,
   findBalance,
   getBalances,
+  reconcileBalances,
   refundBalance,
 } from '@/modules/balances/services/balance.service'

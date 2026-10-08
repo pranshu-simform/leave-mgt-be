@@ -70,6 +70,10 @@ export interface ListFilters {
   from?: string
 }
 
+export interface AdminListFilters extends Omit<ListFilters, 'userId'> {
+  userId?: string
+}
+
 export interface LeaveRequestActor {
   id: string
   role: Role
