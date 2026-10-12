@@ -5,7 +5,6 @@ import { AppError } from '@/common/errors/AppError'
 import { ERROR_CODES } from '@/common/errors/errorCodes'
 import { signAccessToken } from '@/common/utils/jwt'
 import { prisma, withTransaction, type Db } from '@/prisma/client'
-import { DUMMY_PASSWORD_HASH } from '@/modules/auth/constants/auth.constants'
 import { refreshTokenRepository } from '@/modules/auth/repositories/refresh-token.repository'
 import type {
   AuthResult,
@@ -37,10 +36,10 @@ async function issueRefreshToken(
 
 export async function login(input: LoginInput, meta: RequestMeta): Promise<AuthResult> {
   const user = await findUserByEmail(input.email)
-  const passwordMatches = await bcrypt.compare(
-    input.password,
-    user?.passwordHash ?? DUMMY_PASSWORD_HASH,
-  )
+  if (!user?.passwordHash) {
+    throw invalidCredentials()
+  }
+  const passwordMatches = await bcrypt.compare(input.password, user?.passwordHash)
   if (!user || !passwordMatches || !user.isActive) throw invalidCredentials()
 
   const refreshToken = await issueRefreshToken(prisma, user.id, randomUUID(), meta)
