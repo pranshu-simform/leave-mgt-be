@@ -14,12 +14,21 @@ export interface UserActor {
   role: Role
 }
 
-export type UserListRow = Prisma.UserGetPayload<{ include: typeof USER_LIST_RELATIONS }>
+export type UserListRow = Prisma.UserGetPayload<{
+  include: typeof USER_LIST_RELATIONS
+}>
 
 export interface UserListFilters {
   search?: string
   role?: Role
   isActive?: boolean
+}
+
+export interface CreateUserData {
+  email: string
+  name: string
+  role: Role
+  managerId: string | null
 }
 
 export interface UserListItemDto {
@@ -28,5 +37,6 @@ export interface UserListItemDto {
   email: string
   role: Role
   isActive: boolean
+  hasPassword: boolean
   manager: { id: string; name: string } | null
 }

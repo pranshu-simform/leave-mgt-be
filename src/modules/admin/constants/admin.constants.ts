@@ -9,3 +9,5 @@ export const ADMIN_YEAR_MIN = 2000
 export const ADMIN_YEAR_MAX = 2100
 export const ADJUST_NOTE_MAX_LENGTH = 200
 export const USER_SEARCH_MAX_LENGTH = 100
+export const USER_NAME_MAX_LENGTH = 100
+export const USER_EMAIL_MAX_LENGTH = 254

@@ -11,6 +11,7 @@ export function toUserListItemDto(row: UserListRow): UserListItemDto {
     email: row.email,
     role: row.role,
     isActive: row.isActive,
+    hasPassword: row.passwordHash !== null,
     manager: row.manager ? { id: row.manager.id, name: row.manager.name } : null,
   }
 }

@@ -1,3 +1,4 @@
+import type { Role } from '@/generated/prisma/enums'
 import type { EmailRow, LeaveEmailData } from '@/modules/email/types/email.types'
 
 export function firstName(name: string): string {
@@ -31,4 +32,14 @@ export function noteQuote(leave: LeaveEmailData): EmailRow | undefined {
 
 export function managerFooter(leave: LeaveEmailData): string {
   return `You get this email because you are ${leave.employeeName}'s manager.`
+}
+
+const ROLE_LABELS: Record<Role, string> = {
+  EMPLOYEE: 'Employee',
+  MANAGER: 'Manager',
+  HR_ADMIN: 'HR admin',
+}
+
+export function roleLabel(role: Role): string {
+  return ROLE_LABELS[role]
 }

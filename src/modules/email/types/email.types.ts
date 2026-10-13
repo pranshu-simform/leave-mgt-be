@@ -44,9 +44,9 @@ export interface EmailContent {
   heading: string
   greeting: string
   intro: string
-  status: LeaveStatus
+  status?: LeaveStatus
   statusNote?: string
-  rows: EmailRow[]
+  rows?: EmailRow[]
   quote?: EmailRow
   action: { label: string; url: string }
   footer: string
@@ -108,4 +108,15 @@ export interface LeaveDecisionTemplateData extends LeaveTemplateData {
 
 export interface LeaveRejectionTemplateData extends LeaveDecisionTemplateData {
   reason: string
+}
+
+// ---- Account emails ----
+
+// Template inputs for the email that lets a new user choose a password.
+export interface SetPasswordTemplateData {
+  recipient: Recipient
+  creatorName: string
+  roleLabel: string
+  setPasswordUrl: string
+  validHours: number
 }

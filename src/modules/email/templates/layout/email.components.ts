@@ -6,7 +6,8 @@ import { escapeHtml, font, keepDatesWhole, multiline } from '@/modules/email/uti
 // Reusable, email-safe building blocks (tables and inline styles). The layout composes them;
 // every block escapes what it is given.
 
-export function statusBadge(status: LeaveStatus, note?: string): string {
+export function statusBadge(status?: LeaveStatus, note?: string): string {
+  if (!status) return ''
   const style = STATUS_BADGES[status]
   const caption = note
     ? `<td class="fg-muted" style="padding-left:10px;${font(13, 400, T.muted)}">${escapeHtml(note)}</td>`
@@ -16,7 +17,8 @@ export function statusBadge(status: LeaveStatus, note?: string): string {
 </tr></table>`
 }
 
-export function detailsTable(rows: EmailRow[]): string {
+export function detailsTable(rows: EmailRow[] = []): string {
+  if (rows.length === 0) return ''
   const cells = rows
     .map(
       (row) => `<tr>

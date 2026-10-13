@@ -22,7 +22,7 @@ import {
   updateLeaveTypeSchema,
 } from '@/modules/admin/schemas/admin-leave-type.schema'
 import { requestListQuerySchema } from '@/modules/admin/schemas/admin-request.schema'
-import { userListQuerySchema } from '@/modules/admin/schemas/admin-user.schema'
+import { createUserSchema, userListQuerySchema } from '@/modules/admin/schemas/admin-user.schema'
 
 export const adminRouter = Router()
 
@@ -61,4 +61,10 @@ adminRouter.get(
 )
 
 adminRouter.get('/users', validate({ query: userListQuerySchema }), userController.list)
+adminRouter.post('/users', validate({ body: createUserSchema }), userController.create)
+adminRouter.post(
+  '/users/:id/resend-invite',
+  validate({ params: idParamSchema }),
+  userController.resend,
+)
 adminRouter.get('/requests', validate({ query: requestListQuerySchema }), requestController.list)

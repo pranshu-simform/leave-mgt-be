@@ -39,5 +39,6 @@ export const STATUS_BADGES: Record<LeaveStatus, BadgeStyle> = {
 export const APP_PATHS = {
   APPROVALS: '/approvals',
   CALENDAR: '/calendar',
+  SET_PASSWORD: '/set-password',
   REQUEST: (id: string) => `/requests/${id}`,
 } as const

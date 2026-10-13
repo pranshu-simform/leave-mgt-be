@@ -21,6 +21,15 @@ export function allocateYear(
   return balanceRepository.allocateYear(db, year, actorId)
 }
 
+export function allocateUserYear(
+  userId: string,
+  year: number,
+  db: Db,
+  actorId: string | null,
+): Promise<number> {
+  return balanceRepository.allocateYear(db, year, actorId, userId)
+}
+
 export async function allocateBalances(
   actor: BalanceActor,
   year: number,

@@ -8,3 +8,11 @@ export function invalidCredentials(): AppError {
 export function authRequired(): AppError {
   return new AppError(ERROR_CODES.UNAUTHENTICATED, 401, 'Authentication required')
 }
+
+export function invalidLink(): AppError {
+  return new AppError(
+    ERROR_CODES.INVALID_LINK,
+    400,
+    'This link is invalid or has expired. Ask HR to send a new one',
+  )
+}

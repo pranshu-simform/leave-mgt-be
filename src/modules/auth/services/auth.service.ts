@@ -96,7 +96,7 @@ export async function logout(rawToken: string | undefined): Promise<void> {
 export async function changePassword(userId: string, input: ChangePasswordInput): Promise<void> {
   const user = await findUserById(userId)
   const currentMatches =
-    user !== null && (await bcrypt.compare(input.currentPassword, user.passwordHash))
+    !!user?.passwordHash && (await bcrypt.compare(input.currentPassword, user.passwordHash))
   if (!currentMatches) {
     throw new AppError(ERROR_CODES.VALIDATION_ERROR, 400, 'Invalid request', [
       { field: 'currentPassword', message: 'Current password is incorrect' },

@@ -69,7 +69,6 @@ ${actionButton(content.action)}
 }
 
 function text(content: EmailContent): string {
-  const status = STATUS_BADGES[content.status].label
   const lines = [
     content.heading,
     '',
@@ -77,8 +76,12 @@ function text(content: EmailContent): string {
     '',
     content.intro,
     '',
-    `Status: ${status}${content.statusNote ? ` (${content.statusNote})` : ''}`,
-    ...content.rows.map((row) => `${row.label}: ${row.value}`),
+    ...(content.status
+      ? [
+          `Status: ${STATUS_BADGES[content.status].label}${content.statusNote ? ` (${content.statusNote})` : ''}`,
+        ]
+      : []),
+    ...(content.rows ?? []).map((row) => `${row.label}: ${row.value}`),
   ]
   if (content.quote) lines.push('', `${content.quote.label}:`, content.quote.value)
   lines.push(

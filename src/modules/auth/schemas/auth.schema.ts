@@ -15,6 +15,19 @@ export const loginSchema = z.object({
     .max(PASSWORD_MAX_LENGTH, 'Password is too long'),
 })
 
+const newPassword = z
+  .string('New password is required')
+  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+  .max(PASSWORD_MAX_LENGTH, `Password must be at most ${PASSWORD_MAX_LENGTH} characters`)
+
+export const setPasswordTokenSchema = z.strictObject({
+  token: z.string('Token is required').min(1, 'Token is required').max(200, 'Token is too long'),
+})
+
+export const setPasswordSchema = setPasswordTokenSchema.extend({
+  password: newPassword,
+})
+
 export const changePasswordSchema = z
   .object({
     currentPassword: z

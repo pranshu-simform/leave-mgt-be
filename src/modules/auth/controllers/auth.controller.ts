@@ -1,7 +1,13 @@
 import type { Request, Response } from 'express'
 import { ok } from '@/common/utils/response'
 import * as authService from '@/modules/auth/services/auth.service'
-import type { ChangePasswordInput, LoginInput } from '@/modules/auth/types/auth.types'
+import * as invitationService from '@/modules/auth/services/invitation.service'
+import type {
+  ChangePasswordInput,
+  LoginInput,
+  SetPasswordInput,
+  SetPasswordTokenInput,
+} from '@/modules/auth/types/auth.types'
 import { clearSessionCookies, setSessionCookies } from '@/modules/auth/utils/auth.cookies'
 import { readRefreshCookie, requestMeta } from '@/modules/auth/utils/auth.request'
 import { toPublicUser } from '@/modules/users'
@@ -35,4 +41,16 @@ export async function changePassword(req: Request, res: Response): Promise<void>
   await authService.changePassword(req.user!.id, req.validated?.body as ChangePasswordInput)
   clearSessionCookies(res)
   res.json(ok(null, 'Password changed. Please sign in again'))
+}
+
+export async function checkSetPasswordLink(req: Request, res: Response): Promise<void> {
+  const info = await invitationService.checkSetPasswordLink(
+    req.validated?.body as SetPasswordTokenInput,
+  )
+  res.json(ok(info))
+}
+
+export async function setPassword(req: Request, res: Response): Promise<void> {
+  await invitationService.setPassword(req.validated?.body as SetPasswordInput)
+  res.json(ok(null, 'Password set. You can sign in now'))
 }

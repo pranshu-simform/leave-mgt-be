@@ -9,7 +9,10 @@ import type {
   holidayYearQuerySchema,
 } from '@/modules/admin/schemas/admin-holiday.schema'
 import type { requestListQuerySchema } from '@/modules/admin/schemas/admin-request.schema'
-import type { userListQuerySchema } from '@/modules/admin/schemas/admin-user.schema'
+import type {
+  createUserSchema,
+  userListQuerySchema,
+} from '@/modules/admin/schemas/admin-user.schema'
 import type {
   createLeaveTypeSchema,
   updateLeaveTypeSchema,
@@ -24,3 +27,4 @@ export type AdjustBalanceInput = z.infer<typeof adjustBalanceSchema>
 export type ReconcileQuery = z.infer<typeof reconcileQuerySchema>
 export type UserListQuery = z.infer<typeof userListQuerySchema>
 export type RequestListQuery = z.infer<typeof requestListQuerySchema>
+export type CreateUserInput = z.infer<typeof createUserSchema>

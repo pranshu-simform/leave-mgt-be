@@ -72,7 +72,13 @@ export const balanceRepository = {
   // One statement: a balance for every active user x active balance-drawing leave type, and an
   // ALLOCATION ledger row only for the balances this call actually inserted. A rerun, or a
   // concurrent run, inserts nothing twice because of the unique key and ON CONFLICT DO NOTHING.
-  allocateYear: (db: Db, year: number, actorId: string | null): Promise<number> =>
+
+  allocateYear: (
+    db: Db,
+    year: number,
+    actorId: string | null,
+    userId: string | null = null,
+  ): Promise<number> =>
     db.$executeRaw`
       WITH inserted AS (
         INSERT INTO leave_balances (id, user_id, leave_type_id, year, allowance, used, created_at, updated_at)
@@ -80,6 +86,7 @@ export const balanceRepository = {
         FROM users u
         CROSS JOIN leave_types t
         WHERE u.is_active AND t.is_active AND t.draws_from_balance
+          AND (${userId}::uuid IS NULL OR u.id = ${userId}::uuid)
         ON CONFLICT (user_id, leave_type_id, year) DO NOTHING
         RETURNING id, allowance
       )

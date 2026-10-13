@@ -1,4 +1,5 @@
 export { verifyEmailProvider } from '@/modules/email/services/email.service'
+export { sendSetPasswordEmail } from '@/modules/email/services/account-email.service'
 export {
   sendLeaveApprovedEmail,
   sendLeaveAutoApprovedEmail,

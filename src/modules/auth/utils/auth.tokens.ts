@@ -1,5 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { REFRESH_TOKEN_BYTES } from '@/modules/auth/constants/auth.constants'
+import {
+  REFRESH_TOKEN_BYTES,
+  SET_PASSWORD_TOKEN_BYTES,
+} from '@/modules/auth/constants/auth.constants'
 
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
@@ -7,4 +10,8 @@ export function hashToken(token: string): string {
 
 export function generateRefreshToken(): string {
   return randomBytes(REFRESH_TOKEN_BYTES).toString('base64url')
+}
+
+export function generateSetPasswordToken(): string {
+  return randomBytes(SET_PASSWORD_TOKEN_BYTES).toString('base64url')
 }

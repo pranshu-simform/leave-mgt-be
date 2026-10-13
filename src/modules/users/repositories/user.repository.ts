@@ -1,6 +1,6 @@
 import type { Db } from '@/prisma/client'
 import { USER_LIST_RELATIONS } from '@/modules/users/constants/user.constants'
-import type { UserActor, UserListFilters } from '@/modules/users/types/user.types'
+import type { CreateUserData, UserActor, UserListFilters } from '@/modules/users/types/user.types'
 import { listWhere } from '@/modules/users/utils/user.queries'
 
 export const userRepository = {
@@ -29,6 +29,16 @@ export const userRepository = {
       db.user.count({ where }),
     ])
     return { items, total }
+  },
+
+  create: (db: Db, data: CreateUserData) => db.user.create({ data, include: USER_LIST_RELATIONS }),
+
+  setInitialPasswordHash: async (db: Db, id: string, passwordHash: string) => {
+    const result = await db.user.updateMany({
+      where: { id, passwordHash: null, isActive: true },
+      data: { passwordHash },
+    })
+    return result.count === 1
   },
 
   updatePasswordHash: (db: Db, id: string, passwordHash: string) =>
