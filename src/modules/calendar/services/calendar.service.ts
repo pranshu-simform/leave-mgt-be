@@ -10,7 +10,7 @@ import type {
   SummaryQuery,
   TeamDto,
 } from '@/modules/calendar/types/calendar.types'
-import { toItem } from '@/modules/calendar/utils/calendar.mappers'
+import { toItem, toTeamDto } from '@/modules/calendar/utils/calendar.mappers'
 import { resolveTeamScope } from '@/modules/calendar/utils/calendar.scope'
 
 export async function getOverlaps(
@@ -46,7 +46,8 @@ export async function getCalendar(actor: CalendarActor, query: CalendarQuery) {
 }
 
 export async function listTeams(): Promise<TeamDto[]> {
-  return calendarRepository.findTeams(prisma)
+  const teams = await calendarRepository.findTeams(prisma)
+  return teams.map(toTeamDto)
 }
 
 export async function getCalendarSummary(actor: CalendarActor, query: SummaryQuery) {

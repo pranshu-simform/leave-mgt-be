@@ -6,10 +6,6 @@ export interface HolidayRow {
   name: string
 }
 
-export interface HolidayDateRow {
-  date: string
-}
-
 export type HolidayQuery = z.infer<typeof holidayQuerySchema>
 
 export interface AdminHolidayDto {

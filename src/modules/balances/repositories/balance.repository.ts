@@ -20,11 +20,11 @@ export const balanceRepository = {
   },
 
   refund: async (db: Db, { userId, leaveTypeId, year, days }: BalanceKey) => {
-    const rows = await db.$queryRaw<BalanceIdRow[]>`
-      UPDATE leave_balances SET used = used - ${days}::int, updated_at = now()
-      WHERE user_id = ${userId}::uuid AND leave_type_id = ${leaveTypeId}::uuid
-        AND year = ${year}::int AND used - ${days}::int >= 0
-      RETURNING id`
+    const rows = await db.leaveBalance.updateManyAndReturn({
+      where: { userId, leaveTypeId, year, used: { gte: days } },
+      data: { used: { decrement: days } },
+      select: { id: true },
+    })
     return rows[0]?.id ?? null
   },
 

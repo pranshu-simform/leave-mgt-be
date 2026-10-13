@@ -16,12 +16,12 @@ export const setPasswordTokenRepository = {
     }),
 
   consume: async (db: Db, tokenHash: string, now: Date): Promise<string | null> => {
-    const rows = await db.$queryRaw<{ user_id: string }[]>`
-      UPDATE set_password_tokens
-      SET used_at = ${now}
-      WHERE token_hash = ${tokenHash} AND used_at IS NULL AND expires_at > ${now}
-      RETURNING user_id`
-    return rows[0]?.user_id ?? null
+    const rows = await db.setPasswordToken.updateManyAndReturn({
+      where: { tokenHash, usedAt: null, expiresAt: { gt: now } },
+      data: { usedAt: now },
+      select: { userId: true },
+    })
+    return rows[0]?.userId ?? null
   },
 
   invalidateForUser: (db: Db, userId: string, now: Date) =>

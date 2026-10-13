@@ -1,41 +1,42 @@
 import { Prisma } from '@/generated/prisma/client'
 import type { Db } from '@/prisma/client'
-import { MAX_OVERLAPPING, MAX_TEAMS } from '@/modules/calendar/constants/calendar.constants'
+import {
+  CALENDAR_REQUEST_SELECT,
+  MAX_OVERLAPPING,
+  MAX_TEAMS,
+  TEAM_SELECT,
+} from '@/modules/calendar/constants/calendar.constants'
 import type {
-  AbsenceRow,
   CalendarFilter,
   OverlapKey,
   PeakRow,
-  SizeRow,
   SummaryFilter,
   SummaryRow,
-  TeamRow,
   TotalRow,
 } from '@/modules/calendar/types/calendar.types'
-import { calendarWhere, weekdays } from '@/modules/calendar/utils/calendar.queries'
+import {
+  calendarRequestWhere,
+  teamOverlapSql,
+  weekdays,
+} from '@/modules/calendar/utils/calendar.queries'
 
 export const calendarRepository = {
   findOverlapping: (db: Db, { managerId, userId, from, to }: OverlapKey) =>
-    db.$queryRaw<AbsenceRow[]>`
-      SELECT r.id AS "requestId", u.id AS "userId", u.name,
-        lt.id AS "typeId", lt.name AS "typeName",
-        to_char(r.start_date, 'YYYY-MM-DD') AS "startDate",
-        to_char(r.end_date, 'YYYY-MM-DD') AS "endDate",
-        r.status::text AS status
-      FROM leave_requests r
-      JOIN users u ON u.id = r.user_id
-      JOIN leave_types lt ON lt.id = r.leave_type_id
-      WHERE ${calendarWhere({ managerId, from, to })} AND u.id <> ${userId}::uuid
-      ORDER BY r.start_date, r.id
-      LIMIT ${MAX_OVERLAPPING}`,
+    db.leaveRequest.findMany({
+      where: { ...calendarRequestWhere({ managerId, from, to }), userId: { not: userId } },
+      select: CALENDAR_REQUEST_SELECT,
+      orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+      take: MAX_OVERLAPPING,
+    }),
 
+  // Raw SQL: one row per weekday needs generate_series, which Prisma cannot express.
   peakConcurrent: async (db: Db, { managerId, userId, from, to }: OverlapKey) => {
     const rows = await db.$queryRaw<PeakRow[]>`
       WITH others AS (
         SELECT r.start_date, r.end_date
         FROM leave_requests r
         JOIN users u ON u.id = r.user_id
-        WHERE ${calendarWhere({ managerId, from, to })} AND u.id <> ${userId}::uuid
+        WHERE ${teamOverlapSql({ managerId, from, to })} AND u.id <> ${userId}::uuid
       ), per_day AS (
         SELECT days.day, count(o.start_date) AS n
         FROM (${weekdays({ from, to })}) days
@@ -48,45 +49,31 @@ export const calendarRepository = {
 
   // Teams HR can look at: managers with at least one active report. A small reference list, capped.
   findTeams: (db: Db) =>
-    db.$queryRaw<TeamRow[]>`
-      SELECT m.id AS "managerId", m.name AS "managerName", count(*)::int AS "teamSize"
-      FROM users u
-      JOIN users m ON m.id = u.manager_id AND m.is_active
-      WHERE u.is_active
-      GROUP BY m.id, m.name
-      ORDER BY m.name, m.id
-      LIMIT ${MAX_TEAMS}`,
+    db.user.findMany({
+      where: { isActive: true, reports: { some: { isActive: true } } },
+      select: TEAM_SELECT,
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      take: MAX_TEAMS,
+    }),
 
-  teamSize: async (db: Db, managerId: string) => {
-    const rows = await db.$queryRaw<SizeRow[]>`
-      SELECT count(*)::int AS size FROM users WHERE manager_id = ${managerId}::uuid AND is_active`
-    return rows[0]?.size ?? 0
-  },
+  teamSize: (db: Db, managerId: string) => db.user.count({ where: { managerId, isActive: true } }),
 
   findInMonth: async (db: Db, filter: CalendarFilter, skip: number, take: number) => {
-    const where = calendarWhere(filter)
-    const [items, counts] = await Promise.all([
-      db.$queryRaw<AbsenceRow[]>`
-        SELECT r.id AS "requestId", u.id AS "userId", u.name,
-          lt.id AS "typeId", lt.name AS "typeName",
-          to_char(r.start_date, 'YYYY-MM-DD') AS "startDate",
-          to_char(r.end_date, 'YYYY-MM-DD') AS "endDate",
-          r.status::text AS status
-        FROM leave_requests r
-        JOIN users u ON u.id = r.user_id
-        JOIN leave_types lt ON lt.id = r.leave_type_id
-        WHERE ${where}
-        ORDER BY r.start_date, r.id
-        LIMIT ${take} OFFSET ${skip}`,
-      db.$queryRaw<TotalRow[]>`
-        SELECT count(*)::int AS total
-        FROM leave_requests r
-        JOIN users u ON u.id = r.user_id
-        WHERE ${where}`,
+    const where = calendarRequestWhere(filter)
+    const [items, total] = await Promise.all([
+      db.leaveRequest.findMany({
+        where,
+        select: CALENDAR_REQUEST_SELECT,
+        orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+        skip,
+        take,
+      }),
+      db.leaveRequest.count({ where }),
     ])
-    return { items, total: counts[0]?.total ?? 0 }
+    return { items, total }
   },
 
+  // Raw SQL: the heatmap groups by generated weekdays and probes the range GiST index per day.
   summarize: async (db: Db, { managerId, from, to }: SummaryFilter, skip: number, take: number) => {
     const source = Prisma.sql`
       FROM (${weekdays({ from, to })}) days

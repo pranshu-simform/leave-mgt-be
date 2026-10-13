@@ -1,3 +1,4 @@
+import { isoToDate } from '@/common/utils/dates'
 import type { Db } from '@/prisma/client'
 import {
   MAX_MONTHLY_ROWS,
@@ -5,13 +6,12 @@ import {
   TEAM_WINDOW_DAYS,
 } from '@/modules/dashboard/constants/dashboard.constants'
 import type {
-  CountRow,
   MonthlyDays,
   MonthlyFilter,
   TeamDay,
   TeamScope,
 } from '@/modules/dashboard/types/dashboard.types'
-import { teamMemberWhere } from '@/modules/dashboard/utils/dashboard.queries'
+import { teamMemberFilter, teamMemberWhere } from '@/modules/dashboard/utils/dashboard.queries'
 
 export const dashboardRepository = {
   // Approved working days per month and leave type. Each request is expanded to its days inside
@@ -36,20 +36,18 @@ export const dashboardRepository = {
       ORDER BY 1, lt.id
       LIMIT ${MAX_MONTHLY_ROWS}`,
 
-  teamSize: async (db: Db, scope: TeamScope) => {
-    const rows = await db.$queryRaw<CountRow[]>`
-      SELECT count(*)::int AS count FROM users u WHERE ${teamMemberWhere(scope)}`
-    return rows[0]?.count ?? 0
-  },
+  teamSize: (db: Db, scope: TeamScope) => db.user.count({ where: teamMemberFilter(scope) }),
 
-  awayOn: async (db: Db, scope: TeamScope, day: string) => {
-    const rows = await db.$queryRaw<CountRow[]>`
-      SELECT count(*)::int AS count
-      FROM leave_requests r
-      JOIN users u ON u.id = r.user_id
-      WHERE ${teamMemberWhere(scope)} AND r.status = 'APPROVED'
-        AND daterange(r.start_date, r.end_date, '[]') @> ${day}::date`
-    return rows[0]?.count ?? 0
+  awayOn: (db: Db, scope: TeamScope, day: string) => {
+    const date = isoToDate(day)
+    return db.leaveRequest.count({
+      where: {
+        status: 'APPROVED',
+        startDate: { lte: date },
+        endDate: { gte: date },
+        user: teamMemberFilter(scope),
+      },
+    })
   },
 
   // People away on each of the next working days from `from`, split by status. A person has at most

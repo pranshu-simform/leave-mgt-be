@@ -1,13 +1,28 @@
-import type { AbsenceItem, AbsenceRow } from '@/modules/calendar/types/calendar.types'
+import { dateToIso } from '@/common/utils/dates'
+import type {
+  AbsenceItem,
+  CalendarRequestRow,
+  CalendarStatus,
+  TeamDto,
+  TeamRow,
+} from '@/modules/calendar/types/calendar.types'
 
-export function toItem(row: AbsenceRow): AbsenceItem {
+export function toItem(row: CalendarRequestRow): AbsenceItem {
   return {
-    requestId: row.requestId,
-    userId: row.userId,
-    name: row.name,
-    leaveType: { id: row.typeId, name: row.typeName },
-    startDate: row.startDate,
-    endDate: row.endDate,
-    status: row.status,
+    requestId: row.id,
+    userId: row.user.id,
+    name: row.user.name,
+    leaveType: row.leaveType,
+    startDate: dateToIso(row.startDate),
+    endDate: dateToIso(row.endDate),
+    status: row.status as CalendarStatus,
+  }
+}
+
+export function toTeamDto(row: TeamRow): TeamDto {
+  return {
+    managerId: row.id,
+    managerName: row.name,
+    teamSize: row._count.reports,
   }
 }

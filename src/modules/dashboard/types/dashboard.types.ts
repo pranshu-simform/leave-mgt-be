@@ -45,8 +45,4 @@ export interface MonthlyFilter {
   to: string
 }
 
-export interface CountRow {
-  count: number
-}
-
 export type DashboardQuery = z.infer<typeof dashboardQuerySchema>

@@ -1,25 +1,24 @@
-import { isoToDate } from '@/common/utils/dates'
+import { dateToIso, isoToDate } from '@/common/utils/dates'
 import type { Db } from '@/prisma/client'
-import type {
-  CreateHolidayData,
-  HolidayDateRow,
-  HolidayRow,
-} from '@/modules/holidays/types/holiday.types'
+import type { CreateHolidayData, HolidayRow } from '@/modules/holidays/types/holiday.types'
+import { holidayWindow } from '@/modules/holidays/utils/holiday.queries'
 
 export const holidayRepository = {
-  findBetween: (db: Db, startDate: string, endDate: string) =>
-    db.$queryRaw<HolidayRow[]>`
-      SELECT to_char(date, 'YYYY-MM-DD') AS date, name
-      FROM public_holidays
-      WHERE date BETWEEN ${startDate}::date AND ${endDate}::date
-      ORDER BY date`,
+  findBetween: async (db: Db, startDate: string, endDate: string): Promise<HolidayRow[]> => {
+    const rows = await db.publicHoliday.findMany({
+      ...holidayWindow(startDate, endDate),
+      select: { date: true, name: true },
+      orderBy: { date: 'asc' },
+    })
+    return rows.map((row) => ({ date: dateToIso(row.date), name: row.name }))
+  },
 
   findDatesBetween: async (db: Db, startDate: string, endDate: string): Promise<string[]> => {
-    const rows = await db.$queryRaw<HolidayDateRow[]>`
-      SELECT to_char(date, 'YYYY-MM-DD') AS date
-      FROM public_holidays
-      WHERE date BETWEEN ${startDate}::date AND ${endDate}::date`
-    return rows.map((row) => row.date)
+    const rows = await db.publicHoliday.findMany({
+      ...holidayWindow(startDate, endDate),
+      select: { date: true },
+    })
+    return rows.map((row) => dateToIso(row.date))
   },
 
   findByYear: async (db: Db, year: number, skip: number, take: number) => {
