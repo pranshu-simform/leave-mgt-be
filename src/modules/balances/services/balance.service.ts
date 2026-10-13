@@ -39,7 +39,6 @@ export async function getBalances(userId: string, year: number): Promise<Balance
   ])
   return rows.map((row) => ({
     leaveTypeId: row.leaveType.id,
-    code: row.leaveType.code,
     name: row.leaveType.name,
     year: row.year,
     allowance: row.allowance,

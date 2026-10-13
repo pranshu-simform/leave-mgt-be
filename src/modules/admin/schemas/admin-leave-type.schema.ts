@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import {
   LEAVE_DAYS_MAX,
-  LEAVE_TYPE_CODE_PATTERN,
   LEAVE_TYPE_NAME_MAX_LENGTH,
 } from '@/modules/admin/constants/admin.constants'
 
@@ -24,13 +23,6 @@ const maxConsecutiveDays = z
   .nullable()
 
 export const createLeaveTypeSchema = z.strictObject({
-  code: z
-    .string('Code is required')
-    .trim()
-    .regex(
-      LEAVE_TYPE_CODE_PATTERN,
-      'Use 2 to 30 capital letters, digits or underscores, starting with a letter',
-    ),
   name,
   drawsFromBalance: z.boolean('Choose whether it draws from a balance'),
   defaultAllowanceDays: days('Allowance'),

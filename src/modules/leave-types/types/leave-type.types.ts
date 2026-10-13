@@ -3,7 +3,6 @@ import type { LeaveType } from '@/generated/prisma/client'
 
 export interface LeaveTypeDto {
   id: string
-  code: string
   name: string
   drawsFromBalance: boolean
   defaultAllowanceDays: number
@@ -42,7 +41,6 @@ export interface AdminLeaveTypeDto extends LeaveTypeDto {
 }
 
 export interface CreateLeaveTypeData {
-  code: string
   name: string
   drawsFromBalance: boolean
   defaultAllowanceDays: number

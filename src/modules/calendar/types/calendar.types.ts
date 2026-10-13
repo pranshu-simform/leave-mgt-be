@@ -11,7 +11,7 @@ export interface AbsenceItem {
   requestId: string
   userId: string
   name: string
-  leaveType: { code: string; name: string }
+  leaveType: { id: string; name: string }
   startDate: string
   endDate: string
   status: CalendarStatus
@@ -42,7 +42,7 @@ export interface AbsenceRow {
   requestId: string
   userId: string
   name: string
-  typeCode: string
+  typeId: string
   typeName: string
   startDate: string
   endDate: string

@@ -49,8 +49,7 @@ const USERS = [
 
 const LEAVE_TYPES = [
   {
-    code: 'ANNUAL',
-    name: 'Annual leave',
+    name: 'Planned leave',
     drawsFromBalance: true,
     defaultAllowanceDays: 20,
     allowRetroactive: false,
@@ -60,8 +59,7 @@ const LEAVE_TYPES = [
     requiresApproval: true,
   },
   {
-    code: 'SICK',
-    name: 'Sick leave',
+    name: 'Unplanned leave',
     drawsFromBalance: true,
     defaultAllowanceDays: 10,
     allowRetroactive: true,
@@ -71,7 +69,6 @@ const LEAVE_TYPES = [
     requiresApproval: false,
   },
   {
-    code: 'UNPAID',
     name: 'Unpaid leave',
     drawsFromBalance: false,
     defaultAllowanceDays: 0,
@@ -82,7 +79,6 @@ const LEAVE_TYPES = [
     requiresApproval: true,
   },
   {
-    code: 'PARENTAL',
     name: 'Parental leave',
     drawsFromBalance: true,
     defaultAllowanceDays: 30,
@@ -122,7 +118,7 @@ async function main(): Promise<void> {
 
   for (const type of LEAVE_TYPES) {
     await prisma.leaveType.upsert({
-      where: { code: type.code },
+      where: { name: type.name },
       create: type,
       update: type,
     })

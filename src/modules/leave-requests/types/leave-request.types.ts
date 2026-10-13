@@ -12,7 +12,7 @@ import type {
 
 export interface LeaveRequestDto {
   id: string
-  leaveType: { id: string; code: string; name: string }
+  leaveType: { id: string; name: string }
   startDate: string
   endDate: string
   days: number

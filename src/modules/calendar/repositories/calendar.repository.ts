@@ -18,7 +18,7 @@ export const calendarRepository = {
   findOverlapping: (db: Db, { managerId, userId, from, to }: OverlapKey) =>
     db.$queryRaw<AbsenceRow[]>`
       SELECT r.id AS "requestId", u.id AS "userId", u.name,
-        lt.code AS "typeCode", lt.name AS "typeName",
+        lt.id AS "typeId", lt.name AS "typeName",
         to_char(r.start_date, 'YYYY-MM-DD') AS "startDate",
         to_char(r.end_date, 'YYYY-MM-DD') AS "endDate",
         r.status::text AS status
@@ -68,7 +68,7 @@ export const calendarRepository = {
     const [items, counts] = await Promise.all([
       db.$queryRaw<AbsenceRow[]>`
         SELECT r.id AS "requestId", u.id AS "userId", u.name,
-          lt.code AS "typeCode", lt.name AS "typeName",
+          lt.id AS "typeId", lt.name AS "typeName",
           to_char(r.start_date, 'YYYY-MM-DD') AS "startDate",
           to_char(r.end_date, 'YYYY-MM-DD') AS "endDate",
           r.status::text AS status

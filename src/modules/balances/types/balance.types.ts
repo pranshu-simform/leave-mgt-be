@@ -4,7 +4,6 @@ import type { balanceQuerySchema } from '@/modules/balances/schemas/balance.sche
 
 export interface BalanceDto {
   leaveTypeId: string
-  code: string
   name: string
   year: number
   allowance: number
@@ -53,7 +52,6 @@ export interface DriftRow {
   user_id: string
   user_name: string
   leave_type_id: string
-  leave_type_code: string
   leave_type_name: string
   allowance: number
   expected_allowance: number
@@ -65,7 +63,7 @@ export interface DriftRow {
 export interface DriftDto {
   balanceId: string
   user: { id: string; name: string }
-  leaveType: { id: string; code: string; name: string }
+  leaveType: { id: string; name: string }
   allowance: number
   expectedAllowance: number
   used: number

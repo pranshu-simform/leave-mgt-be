@@ -81,8 +81,7 @@ model RefreshToken {
 
 model LeaveType {
   id                   String   @id @default(uuid(7)) @db.Uuid
-  code                 String   @unique
-  name                 String
+  name                 String   @unique
   drawsFromBalance     Boolean  @map("draws_from_balance")
   defaultAllowanceDays Int      @map("default_allowance_days")
   allowRetroactive     Boolean  @default(false) @map("allow_retroactive")

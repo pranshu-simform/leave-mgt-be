@@ -5,7 +5,7 @@ export function toItem(row: AbsenceRow): AbsenceItem {
     requestId: row.requestId,
     userId: row.userId,
     name: row.name,
-    leaveType: { code: row.typeCode, name: row.typeName },
+    leaveType: { id: row.typeId, name: row.typeName },
     startDate: row.startDate,
     endDate: row.endDate,
     status: row.status,
