@@ -9,20 +9,17 @@ import type {
   SetPasswordTokenInput,
 } from '@/modules/auth/types/auth.types'
 import { clearSessionCookies, setSessionCookies } from '@/modules/auth/utils/auth.cookies'
-import { readRefreshCookie, requestMeta } from '@/modules/auth/utils/auth.request'
+import { readRefreshCookie } from '@/modules/auth/utils/auth.request'
 import { toPublicUser } from '@/modules/users'
 
 export async function login(req: Request, res: Response): Promise<void> {
-  const { user, session } = await authService.login(
-    req.validated?.body as LoginInput,
-    requestMeta(req),
-  )
+  const { user, session } = await authService.login(req.validated?.body as LoginInput)
   setSessionCookies(res, session)
   res.json(ok(user))
 }
 
 export async function refresh(req: Request, res: Response): Promise<void> {
-  const { user, session } = await authService.refresh(readRefreshCookie(req), requestMeta(req))
+  const { user, session } = await authService.refresh(readRefreshCookie(req))
   setSessionCookies(res, session)
   res.json(ok(user))
 }

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { BCRYPT_COST, REFRESH_TOKEN_TTL_SECONDS } from '@/common/constants'
 import { AppError } from '@/common/errors/AppError'
@@ -6,35 +5,22 @@ import { ERROR_CODES } from '@/common/errors/errorCodes'
 import { signAccessToken } from '@/common/utils/jwt'
 import { prisma, withTransaction, type Db } from '@/prisma/client'
 import { refreshTokenRepository } from '@/modules/auth/repositories/refresh-token.repository'
-import type {
-  AuthResult,
-  ChangePasswordInput,
-  LoginInput,
-  RequestMeta,
-} from '@/modules/auth/types/auth.types'
+import type { AuthResult, ChangePasswordInput, LoginInput } from '@/modules/auth/types/auth.types'
 import { authRequired, invalidCredentials } from '@/modules/auth/utils/auth.errors'
 import { generateRefreshToken, hashToken } from '@/modules/auth/utils/auth.tokens'
 import { findUserByEmail, findUserById, setPasswordHash, toPublicUser } from '@/modules/users'
 
-async function issueRefreshToken(
-  db: Db,
-  userId: string,
-  familyId: string,
-  meta: RequestMeta,
-): Promise<string> {
+async function issueRefreshToken(db: Db, userId: string): Promise<string> {
   const raw = generateRefreshToken()
   await refreshTokenRepository.create(db, {
     userId,
     tokenHash: hashToken(raw),
-    familyId,
     expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000),
-    userAgent: meta.userAgent,
-    ip: meta.ip,
   })
   return raw
 }
 
-export async function login(input: LoginInput, meta: RequestMeta): Promise<AuthResult> {
+export async function login(input: LoginInput): Promise<AuthResult> {
   const user = await findUserByEmail(input.email)
   if (!user?.passwordHash) {
     throw invalidCredentials()
@@ -42,17 +28,14 @@ export async function login(input: LoginInput, meta: RequestMeta): Promise<AuthR
   const passwordMatches = await bcrypt.compare(input.password, user?.passwordHash)
   if (!user || !passwordMatches || !user.isActive) throw invalidCredentials()
 
-  const refreshToken = await issueRefreshToken(prisma, user.id, randomUUID(), meta)
+  const refreshToken = await issueRefreshToken(prisma, user.id)
   return {
     user: toPublicUser(user),
     session: { accessToken: signAccessToken(user.id, user.role), refreshToken },
   }
 }
 
-export async function refresh(
-  rawToken: string | undefined,
-  meta: RequestMeta,
-): Promise<AuthResult> {
+export async function refresh(rawToken: string | undefined): Promise<AuthResult> {
   if (!rawToken) throw authRequired()
 
   const tokenHash = hashToken(rawToken)
@@ -64,17 +47,18 @@ export async function refresh(
     if (!existing) return null
 
     if (!consumed) {
-      if (existing.revokedAt) await refreshTokenRepository.revokeFamily(tx, existing.familyId, now)
+      if (existing.revokedAt)
+        await refreshTokenRepository.revokeAllForUser(tx, existing.userId, now)
       return null
     }
 
     const user = await findUserById(existing.userId)
     if (!user?.isActive) {
-      await refreshTokenRepository.revokeFamily(tx, existing.familyId, now)
+      await refreshTokenRepository.revokeAllForUser(tx, existing.userId, now)
       return null
     }
 
-    const nextToken = await issueRefreshToken(tx, user.id, existing.familyId, meta)
+    const nextToken = await issueRefreshToken(tx, user.id)
     return {
       user: toPublicUser(user),
       session: {

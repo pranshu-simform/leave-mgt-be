@@ -7,11 +7,6 @@ import type {
 } from '@/modules/auth/schemas/auth.schema'
 import type { PublicUser } from '@/modules/users'
 
-export interface RequestMeta {
-  userAgent?: string
-  ip?: string
-}
-
 export interface IssuedSession {
   accessToken: string
   refreshToken: string
@@ -25,10 +20,7 @@ export interface AuthResult {
 export interface CreateRefreshTokenData {
   userId: string
   tokenHash: string
-  familyId: string
   expiresAt: Date
-  userAgent?: string
-  ip?: string
 }
 
 export type LoginInput = z.infer<typeof loginSchema>
