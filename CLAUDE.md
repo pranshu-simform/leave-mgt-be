@@ -63,8 +63,8 @@ Modules: auth, users, leave-types, balances, holidays, leave-requests, approvals
 
 ## Data rules
 
-- Balance writes follow the `concurrency-safe-write` skill. The guard lives in the SQL `WHERE`, and the DB `CHECK` is the backstop.
-- Use Prisma unless it cannot express the query: a guard that compares a column plus a value with another column, rows per generated day (`generate_series`), a set-based `INSERT … SELECT`, or aggregates compared with stored columns. Range reads written in Prisma do not use the `daterange` GiST indexes (`docs/DECISIONS.md` entry 13).
+- Balance writes follow the `concurrency-safe-write` skill. Each is one atomic `UPDATE` with `{ increment }` / `{ decrement }`. The `leave_balances_amounts_ck` CHECK is the guard for deduct and adjust (a violation maps to 422, see `balances/utils/balance.errors.ts`); refund keeps a `used >= days` guard in its `WHERE`. Never write an absolute value computed in JS.
+- Use Prisma unless it cannot express the query. What is still raw SQL: the reconcile report (`findDrift`: aggregates compared with stored columns), the calendar heatmap (`summarize`) and the dashboard's `monthly` (rows per generated day, `generate_series`), and the `SELECT 1` health probe. Range reads written in Prisma do not use the `daterange` GiST indexes (`docs/DECISIONS.md` entries 13 and 14).
 - **Tables arrive with their feature.** A phase's migration creates only the tables, columns and constraints that phase uses. Do not add a model early.
 - Constraints Prisma cannot express (exclusion, GiST index, triggers, CHECKs) live in hand-edited migration SQL. See the `db-migration` skill.
 - Pagination is `?page=1&limit=25` (1-based, default limit 25, max 100). Use `paginationQuerySchema`, `toSkipTake()` and `buildPagination()`; answer with `paginated(items, pagination)`. Order by a stable key (for example `created_at, id`) so pages do not overlap.

@@ -10,7 +10,8 @@ import type {
   SummaryQuery,
   TeamDto,
 } from '@/modules/calendar/types/calendar.types'
-import { toItem, toTeamDto } from '@/modules/calendar/utils/calendar.mappers'
+import { toItem, toRange, toTeamDto } from '@/modules/calendar/utils/calendar.mappers'
+import { peakAbsence } from '@/modules/calendar/utils/calendar.peak'
 import { resolveTeamScope } from '@/modules/calendar/utils/calendar.scope'
 
 export async function getOverlaps(
@@ -22,12 +23,16 @@ export async function getOverlaps(
   if (!managerId) return { overlapping: [], peakConcurrent: 0, teamSize: 0 }
 
   const key = { managerId, userId: requester.id, from: startDate, to: endDate }
-  const [overlapping, peakConcurrent, teamSize] = await Promise.all([
+  const [overlapping, ranges, teamSize] = await Promise.all([
     calendarRepository.findOverlapping(prisma, key),
-    calendarRepository.peakConcurrent(prisma, key),
+    calendarRepository.findTeamRanges(prisma, key),
     calendarRepository.teamSize(prisma, managerId),
   ])
-  return { overlapping: overlapping.map(toItem), peakConcurrent, teamSize }
+  return {
+    overlapping: overlapping.map(toItem),
+    peakConcurrent: peakAbsence({ from: startDate, to: endDate }, ranges.map(toRange)),
+    teamSize,
+  }
 }
 
 export async function getCalendar(actor: CalendarActor, query: CalendarQuery) {

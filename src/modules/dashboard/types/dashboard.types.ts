@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import type { Role } from '@/generated/prisma/enums'
+import type { LeaveStatus, Role } from '@/generated/prisma/enums'
 import type { dashboardQuerySchema } from '@/modules/dashboard/schemas/dashboard.schema'
 
 export interface MonthlyDays {
@@ -13,6 +13,11 @@ export interface TeamDay {
   date: string
   approved: number
   pending: number
+}
+
+export interface StatusCount {
+  status: LeaveStatus
+  _count: { _all: number }
 }
 
 export interface TeamStats {

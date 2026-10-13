@@ -20,6 +20,9 @@ if (env.NODE_ENV !== 'production') {
 
 export type Db = Prisma.TransactionClient | PrismaClient
 
-export function withTransaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
-  return prisma.$transaction(fn)
+export function withTransaction<T>(
+  fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  options?: { timeout?: number },
+): Promise<T> {
+  return prisma.$transaction(fn, options)
 }

@@ -1,5 +1,6 @@
 export const MAX_OVERLAPPING = 100
 export const MAX_TEAMS = 200
+export const MAX_PEAK_ROWS = 5000
 
 export const CALENDAR_REQUEST_SELECT = {
   id: true,

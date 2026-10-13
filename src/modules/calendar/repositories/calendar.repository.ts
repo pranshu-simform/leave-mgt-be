@@ -3,49 +3,40 @@ import type { Db } from '@/prisma/client'
 import {
   CALENDAR_REQUEST_SELECT,
   MAX_OVERLAPPING,
+  MAX_PEAK_ROWS,
   MAX_TEAMS,
   TEAM_SELECT,
 } from '@/modules/calendar/constants/calendar.constants'
 import type {
   CalendarFilter,
   OverlapKey,
-  PeakRow,
   SummaryFilter,
   SummaryRow,
   TotalRow,
 } from '@/modules/calendar/types/calendar.types'
-import {
-  calendarRequestWhere,
-  teamOverlapSql,
-  weekdays,
-} from '@/modules/calendar/utils/calendar.queries'
+import { calendarRequestWhere, weekdays } from '@/modules/calendar/utils/calendar.queries'
 
 export const calendarRepository = {
   findOverlapping: (db: Db, { managerId, userId, from, to }: OverlapKey) =>
     db.leaveRequest.findMany({
-      where: { ...calendarRequestWhere({ managerId, from, to }), userId: { not: userId } },
+      where: {
+        ...calendarRequestWhere({ managerId, from, to }),
+        userId: { not: userId },
+      },
       select: CALENDAR_REQUEST_SELECT,
       orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
       take: MAX_OVERLAPPING,
     }),
 
-  // Raw SQL: one row per weekday needs generate_series, which Prisma cannot express.
-  peakConcurrent: async (db: Db, { managerId, userId, from, to }: OverlapKey) => {
-    const rows = await db.$queryRaw<PeakRow[]>`
-      WITH others AS (
-        SELECT r.start_date, r.end_date
-        FROM leave_requests r
-        JOIN users u ON u.id = r.user_id
-        WHERE ${teamOverlapSql({ managerId, from, to })} AND u.id <> ${userId}::uuid
-      ), per_day AS (
-        SELECT days.day, count(o.start_date) AS n
-        FROM (${weekdays({ from, to })}) days
-        LEFT JOIN others o ON o.start_date <= days.day AND o.end_date >= days.day
-        GROUP BY days.day
-      )
-      SELECT coalesce(max(n) + 1, 0)::int AS peak FROM per_day`
-    return rows[0]?.peak ?? 0
-  },
+  findTeamRanges: (db: Db, { managerId, userId, from, to }: OverlapKey) =>
+    db.leaveRequest.findMany({
+      where: {
+        ...calendarRequestWhere({ managerId, from, to }),
+        userId: { not: userId },
+      },
+      select: { startDate: true, endDate: true },
+      take: MAX_PEAK_ROWS,
+    }),
 
   // Teams HR can look at: managers with at least one active report. A small reference list, capped.
   findTeams: (db: Db) =>

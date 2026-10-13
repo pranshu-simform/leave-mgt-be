@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import { BCRYPT_COST } from '@/common/constants'
 import { Role } from '@/generated/prisma/enums'
 import { isoYear, todayIso } from '@/common/utils/dates'
-import { prisma } from '@/prisma/client'
+import { prisma, withTransaction } from '@/prisma/client'
 import { allocateYear } from '@/modules/balances'
 
 const DEV_PASSWORD = 'Password@123'
@@ -172,7 +172,7 @@ async function main(): Promise<void> {
   }
 
   const year = isoYear(todayIso())
-  const allocated = await allocateYear(year)
+  const allocated = await withTransaction((tx) => allocateYear(year, tx))
 
   console.log(
     `Seeded ${LEAVE_TYPES.length} leave types, ${PUBLIC_HOLIDAYS.length} holidays, ${allocated} new ${year} balances.`,

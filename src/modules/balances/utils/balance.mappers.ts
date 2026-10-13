@@ -1,4 +1,4 @@
-import type { DriftDto, DriftRow } from '@/modules/balances/types/balance.types'
+import type { DriftDto, DriftRow, NewBalanceData } from '@/modules/balances/types/balance.types'
 
 export function toDriftDto(row: DriftRow): DriftDto {
   return {
@@ -10,4 +10,19 @@ export function toDriftDto(row: DriftRow): DriftDto {
     used: row.used,
     expectedUsed: row.expected_used,
   }
+}
+
+export function toNewBalances(
+  users: readonly { id: string }[],
+  types: readonly { id: string; defaultAllowanceDays: number }[],
+  year: number,
+): NewBalanceData[] {
+  return users.flatMap((user) =>
+    types.map((type) => ({
+      userId: user.id,
+      leaveTypeId: type.id,
+      year,
+      allowance: type.defaultAllowanceDays,
+    })),
+  )
 }

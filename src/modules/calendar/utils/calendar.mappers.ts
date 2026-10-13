@@ -3,6 +3,7 @@ import type {
   AbsenceItem,
   CalendarRequestRow,
   CalendarStatus,
+  DateWindow,
   TeamDto,
   TeamRow,
 } from '@/modules/calendar/types/calendar.types'
@@ -25,4 +26,8 @@ export function toTeamDto(row: TeamRow): TeamDto {
     managerName: row.name,
     teamSize: row._count.reports,
   }
+}
+
+export function toRange(row: { startDate: Date; endDate: Date }): DateWindow {
+  return { from: dateToIso(row.startDate), to: dateToIso(row.endDate) }
 }

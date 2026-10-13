@@ -77,10 +77,6 @@ export interface SummaryFilter extends DateWindow {
   managerId: string | null
 }
 
-export interface PeakRow {
-  peak: number
-}
-
 export interface TotalRow {
   total: number
 }

@@ -5,11 +5,11 @@ description: Write a state change or balance deduction that is correct under con
 
 # Concurrency-safe writes
 
-The brief's hardest case: two approvals at the same instant must not both succeed, and the balance must never go negative. See `PHASES.md` A1–A3. There are no automated tests (root `CLAUDE.md`), so the guard in the SQL and the DB constraints are what protect this, and the manual check below is how you confirm it.
+The brief's hardest case: two approvals at the same instant must not both succeed, and the balance must never go negative. See `PHASES.md` A1–A3. There are no automated tests (root `CLAUDE.md`), so the atomic statements and the DB constraints are what protect this, and the manual check below is how you confirm it.
 
-## The pattern: guard in the `WHERE`, not in an `if`
+## The pattern: guard in the statement, not in an `if`
 
-Never read a row, check it in JS, then write. Put the condition in the `UPDATE` and look at the row count. The real code is `leave-requests/services/commit-approval.service.ts` and the guarded statements in `leave-requests/repositories/leave-request.repository.ts` and `balances/repositories/balance.repository.ts`.
+Never read a row, check it in JS, then write. Put the condition in the `UPDATE` (its `WHERE`, or a `CHECK` the new row must pass) and look at the row count or the error. The real code is `leave-requests/services/commit-approval.service.ts` and the guarded statements in `leave-requests/repositories/leave-request.repository.ts` and `balances/repositories/balance.repository.ts`.
 
 ```ts
 // 1. state guard + scope + self-approval, in one statement (leave-requests/repositories/leave-request.repository.ts)
@@ -24,13 +24,19 @@ const result = await db.leaveRequest.updateMany({
 })
 if (result.count !== 1) await explainDecisionMiss(db, id, actor) // 403 own request, 404 out of scope, 409 ALREADY_DECIDED
 
-// 2. balance guard, same transaction (balances/repositories/balance.repository.ts, called through deductBalance)
-const rows = await db.$queryRaw<{ id: string }[]>`
-  UPDATE leave_balances SET used = used + ${days}::int
-  WHERE user_id = ${userId}::uuid AND leave_type_id = ${typeId}::uuid AND year = ${year}::int
-    AND used + ${days}::int <= allowance
-  RETURNING id`
-if (rows.length === 0) throw new AppError('INSUFFICIENT_BALANCE', 422, '…') // rolls back step 1
+// 2. balance change, same transaction (balances/repositories/balance.repository.ts, called through deductBalance)
+//    One atomic UPDATE … SET used = used + days RETURNING id. If the new row would break
+//    CHECK leave_balances_amounts_ck (used <= allowance), Postgres fails the statement (23514).
+const rows = await db.leaveBalance
+  .updateManyAndReturn({
+    where: { userId, leaveTypeId, year },
+    data: { used: { increment: days } },
+    select: { id: true },
+  })
+  .catch((err: unknown) => {
+    throw toDeductError(err) // CHECK violation → 422 INSUFFICIENT_BALANCE; rolls back step 1
+  })
+if (rows.length === 0) throw insufficientBalance() // no balance row
 ```
 
 Then, in the same transaction, `deductBalance` writes the `leave_balance_ledger` row and `commitApproval` writes the `leave_request_events` row.
@@ -38,9 +44,10 @@ Then, in the same transaction, `deductBalance` writes the `leave_balance_ledger`
 ## Why it holds
 
 - A row `UPDATE` takes a lock. A concurrent `UPDATE` waits, then re-evaluates its `WHERE` against the committed row (READ COMMITTED). The second approver sees `status = 'APPROVED'` and affects 0 rows.
+- `used = used + days` is computed from the committed row too, after the wait. Two 6-day approvals on a 10-day allowance: the first makes `used` 6, the second computes 12, and the CHECK refuses it. Nothing is lost because nothing writes a value it read earlier.
 - The status guard and the balance guard do different jobs. The status guard stops one request being decided twice; the balance guard stops different requests overspending the same balance. `docs/DECISIONS.md` shows that removing only the balance guard still passes the double-click test and fails the others.
 - Lock order is always request row, then balance row, so two transactions cannot deadlock on each other. That is why there is no `40001`/`40P01` retry wrapper; add one only if a manual run ever shows such an error.
-- The DB `CHECK (used BETWEEN 0 AND allowance)` is a backstop for a bug that overshoots. It cannot catch a silent lost update, so also compare `used` with the ledger (below).
+- The DB `CHECK (used BETWEEN 0 AND allowance)` is the balance guard for deduct and adjust (`docs/DECISIONS.md` entry 14). It only works with relative writes (`increment`): an absolute value computed in JS (`SET used = 6`) can be legal and still wrong, which is the lost update of entry 1. Compare `used` with the ledger as well (below).
 
 ## Rules
 

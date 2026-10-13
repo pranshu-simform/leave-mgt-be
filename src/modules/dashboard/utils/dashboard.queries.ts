@@ -1,4 +1,4 @@
-import { Prisma } from '@/generated/prisma/client'
+import type { Prisma } from '@/generated/prisma/client'
 import type { TeamScope } from '@/modules/dashboard/types/dashboard.types'
 
 export function teamMemberFilter({ managerId, viewerId }: TeamScope): Prisma.UserWhereInput {
@@ -7,11 +7,6 @@ export function teamMemberFilter({ managerId, viewerId }: TeamScope): Prisma.Use
     id: { not: viewerId },
     ...(managerId ? { managerId } : {}),
   }
-}
-
-export function teamMemberWhere({ managerId, viewerId }: TeamScope) {
-  return Prisma.sql`u.is_active AND u.id <> ${viewerId}::uuid
-    ${managerId ? Prisma.sql`AND u.manager_id = ${managerId}::uuid` : Prisma.empty}`
 }
 
 export function yearBounds(year: number) {
