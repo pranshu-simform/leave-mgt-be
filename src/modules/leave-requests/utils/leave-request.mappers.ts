@@ -9,7 +9,6 @@ export function toDto(row: LeaveRequestRow): LeaveRequestDto {
     id: row.id,
     leaveType: {
       id: row.leaveType.id,
-      code: row.leaveType.code,
       name: row.leaveType.name,
     },
     startDate: dateToIso(row.startDate),

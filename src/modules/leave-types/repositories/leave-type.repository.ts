@@ -11,11 +11,12 @@ export const leaveTypeRepository = {
   findActive: (db: Db) =>
     db.leaveType.findMany({
       where: { isActive: true },
-      orderBy: { code: 'asc' },
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
       take: MAX_LEAVE_TYPES,
     }),
 
-  findAll: (db: Db) => db.leaveType.findMany({ orderBy: { code: 'asc' }, take: MAX_LEAVE_TYPES }),
+  findAll: (db: Db) =>
+    db.leaveType.findMany({ orderBy: [{ name: 'asc' }, { id: 'asc' }], take: MAX_LEAVE_TYPES }),
 
   findById: (db: Db, id: string) => db.leaveType.findUnique({ where: { id } }),
 

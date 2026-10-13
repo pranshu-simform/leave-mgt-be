@@ -2,7 +2,6 @@ import { Role } from '@/generated/prisma/enums'
 
 export const ADMIN_ROLES = [Role.HR_ADMIN] as const
 
-export const LEAVE_TYPE_CODE_PATTERN = /^[A-Z][A-Z0-9_]{1,29}$/
 export const LEAVE_TYPE_NAME_MAX_LENGTH = 60
 export const LEAVE_DAYS_MAX = 365
 export const HOLIDAY_NAME_MAX_LENGTH = 80

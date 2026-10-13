@@ -64,8 +64,8 @@ export const balanceRepository = {
   findByUserAndYear: (db: Db, userId: string, year: number) =>
     db.leaveBalance.findMany({
       where: { userId, year },
-      include: { leaveType: { select: { id: true, code: true, name: true } } },
-      orderBy: { leaveType: { code: 'asc' } },
+      include: { leaveType: { select: { id: true, name: true } } },
+      orderBy: [{ leaveType: { name: 'asc' } }, { leaveTypeId: 'asc' }],
       take: MAX_BALANCES,
     }),
 
@@ -106,13 +106,13 @@ export const balanceRepository = {
         GROUP BY b.id
       )
       SELECT c.id AS balance_id, c.user_id, u.name AS user_name,
-        c.leave_type_id, t.code AS leave_type_code, t.name AS leave_type_name,
+        c.leave_type_id, t.name AS leave_type_name,
         c.allowance, c.expected_allowance, c.used, c.expected_used,
         (COUNT(*) OVER ())::int AS drift_total
       FROM computed c
       JOIN users u ON u.id = c.user_id
       JOIN leave_types t ON t.id = c.leave_type_id
       WHERE c.allowance <> c.expected_allowance OR c.used <> c.expected_used
-      ORDER BY u.name, t.code, c.id
+      ORDER BY u.name, t.name, c.id
       LIMIT ${MAX_DRIFT_ROWS}::int`,
 }

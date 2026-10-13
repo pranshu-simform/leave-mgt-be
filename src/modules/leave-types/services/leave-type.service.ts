@@ -57,5 +57,8 @@ export async function updateLeaveType(
   if (!existing) throw new AppError(ERROR_CODES.NOT_FOUND, 404, 'Leave type not found')
   if (!existing.drawsFromBalance && data.defaultAllowanceDays) throw noAllowanceWithoutBalance()
 
-  return toAdminLeaveTypeDto(await leaveTypeRepository.update(prisma, id, data))
+  const updated = await leaveTypeRepository.update(prisma, id, data).catch((err: unknown) => {
+    throw toLeaveTypeError(err)
+  })
+  return toAdminLeaveTypeDto(updated)
 }

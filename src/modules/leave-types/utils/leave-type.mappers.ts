@@ -4,7 +4,6 @@ import type { AdminLeaveTypeDto, LeaveTypeDto } from '@/modules/leave-types/type
 export function toLeaveTypeDto(type: LeaveType): LeaveTypeDto {
   return {
     id: type.id,
-    code: type.code,
     name: type.name,
     drawsFromBalance: type.drawsFromBalance,
     defaultAllowanceDays: type.defaultAllowanceDays,
