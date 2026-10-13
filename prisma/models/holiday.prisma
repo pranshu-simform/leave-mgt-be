@@ -1,0 +1,7 @@
+model PublicHoliday {
+  id   String   @id @default(uuid(7)) @db.Uuid
+  date DateTime @unique @db.Date
+  name String
+
+  @@map("public_holidays")
+}

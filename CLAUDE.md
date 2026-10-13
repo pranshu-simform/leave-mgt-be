@@ -27,7 +27,7 @@ src/
   routes/           # index.ts (/api/health + /api/v1), health.routes.ts, v1/index.ts (module routers, auth first)
   prisma/client.ts  # PrismaClient singleton (withTransaction() arrives with the first repository)
   jobs/             # cleanup.job.ts, year allocation
-prisma/             # schema.prisma, migrations/, seed.ts
+prisma/             # schema.prisma (generator + datasource), models/<module>.prisma, migrations/, seed.ts
 scripts/            # seed-load.ts (stretch only: 5,000-user query-plan data)
 ```
 

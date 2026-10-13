@@ -1,0 +1,59 @@
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum EventAction {
+  SUBMITTED
+  AUTO_APPROVED
+  APPROVED
+  REJECTED
+  EDITED
+  CANCELLED
+}
+
+model LeaveRequest {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  userId      String      @map("user_id") @db.Uuid
+  leaveTypeId String      @map("leave_type_id") @db.Uuid
+  startDate   DateTime    @map("start_date") @db.Date
+  endDate     DateTime    @map("end_date") @db.Date
+  days        Int
+  note        String?
+  status      LeaveStatus @default(PENDING)
+  version     Int         @default(1)
+  decidedBy   String?     @map("decided_by") @db.Uuid
+  decidedAt   DateTime?   @map("decided_at") @db.Timestamptz(3)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user      User                 @relation("RequestOwner", fields: [userId], references: [id])
+  decider   User?                @relation("RequestDecider", fields: [decidedBy], references: [id])
+  leaveType LeaveType            @relation(fields: [leaveTypeId], references: [id])
+  events    LeaveRequestEvent[]
+  ledger    LeaveBalanceLedger[]
+
+  @@index([userId, startDate])
+  @@index([status, createdAt, id])
+  @@map("leave_requests")
+}
+
+model LeaveRequestEvent {
+  id         String       @id @default(uuid(7)) @db.Uuid
+  requestId  String       @map("request_id") @db.Uuid
+  actorId    String       @map("actor_id") @db.Uuid
+  action     EventAction
+  fromStatus LeaveStatus? @map("from_status")
+  toStatus   LeaveStatus  @map("to_status")
+  reason     String?
+  metadata   Json?
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  request LeaveRequest @relation(fields: [requestId], references: [id])
+  actor   User         @relation(fields: [actorId], references: [id])
+
+  @@index([requestId, createdAt, id])
+  @@map("leave_request_events")
+}
