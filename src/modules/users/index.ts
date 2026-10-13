@@ -2,6 +2,7 @@ export {
   findUserByEmail,
   findUserById,
   findUserInReadScope,
+  listUsers,
   setPasswordHash,
 } from '@/modules/users/services/user.service'
 export { toPublicUser } from '@/modules/users/utils/user.mappers'

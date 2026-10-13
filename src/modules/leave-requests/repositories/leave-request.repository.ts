@@ -4,6 +4,7 @@ import type { LeaveStatus } from '@/generated/prisma/enums'
 import type { Db } from '@/prisma/client'
 import { LEAVE_REQUEST_RELATIONS } from '@/modules/leave-requests/constants/leave-request.constants'
 import type {
+  AdminListFilters,
   Approver,
   CreateEventData,
   CreateLeaveRequestData,
@@ -15,6 +16,7 @@ import type {
   UpdateWhere,
 } from '@/modules/leave-requests/types/leave-request.types'
 import {
+  adminListWhere,
   approverScope,
   listWhere,
   readScope,
@@ -71,6 +73,21 @@ export const leaveRequestRepository = {
         include: LEAVE_REQUEST_RELATIONS,
         // Newest first, except the upcoming view (`from`), which reads soonest first.
         orderBy: [{ startDate: filters.from ? 'asc' : 'desc' }, { id: 'asc' }],
+        skip,
+        take,
+      }),
+      db.leaveRequest.count({ where }),
+    ])
+    return { items, total }
+  },
+
+  listAll: async (db: Db, filters: AdminListFilters, skip: number, take: number) => {
+    const where = adminListWhere(filters)
+    const [items, total] = await Promise.all([
+      db.leaveRequest.findMany({
+        where,
+        include: LEAVE_REQUEST_RELATIONS,
+        orderBy: [{ startDate: 'desc' }, { id: 'asc' }],
         skip,
         take,
       }),

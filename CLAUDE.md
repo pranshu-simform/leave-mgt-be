@@ -15,7 +15,7 @@ Express 5, TypeScript 7 (strict, ESM, `moduleResolution: bundler`), Prisma 7 wit
 
 ## Structure
 
-Phases 0 to 11 are applied, plus the first half of Phase 13 (`/admin` leave types and holidays). `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types`, `balances`, `leave-requests`, `approvals`, `calendar` and `admin` (a thin HTTP module like `approvals`: HR-only `/admin/*` routes; the logic lives in the owning modules) modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
+Phases 0 to 11 are applied, plus the backend of Phase 13 (`/admin` leave types, holidays, balance allocation and adjustment, the reconcile report, the user list and the all-requests list). `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types`, `balances`, `leave-requests`, `approvals`, `calendar` and `admin` (a thin HTTP module like `approvals`: HR-only `/admin/*` routes; the logic lives in the owning modules: `balances` allocates, adjusts and reconciles, `users` lists people, `leave-requests` lists every request) modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
 
 ```
 src/
