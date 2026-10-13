@@ -13,7 +13,13 @@ export const userListQuerySchema = paginationQuerySchema.extend({
     .trim()
     .max(USER_SEARCH_MAX_LENGTH, `Search must be at most ${USER_SEARCH_MAX_LENGTH} characters`)
     .optional(),
-  role: z.enum(Role).optional(),
+  // One role or several, comma separated: `role=MANAGER,HR_ADMIN`.
+  role: z
+    .string()
+    .transform((value) => value.split(','))
+    .pipe(z.array(z.enum(Role, 'Choose a role')).max(Object.keys(Role).length, 'Too many roles'))
+    .transform((roles) => [...new Set(roles)])
+    .optional(),
   isActive: z
     .enum(['true', 'false'], 'isActive must be true or false')
     .transform((value) => value === 'true')

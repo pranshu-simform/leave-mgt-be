@@ -20,7 +20,7 @@ export type UserListRow = Prisma.UserGetPayload<{
 
 export interface UserListFilters {
   search?: string
-  role?: Role
+  role?: Role[]
   isActive?: boolean
 }
 

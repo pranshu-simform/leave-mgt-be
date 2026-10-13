@@ -17,7 +17,7 @@ export function listWhere({ search, role, isActive }: UserListFilters): Prisma.U
           ],
         }
       : {}),
-    ...(role ? { role } : {}),
+    ...(role ? { role: { in: role } } : {}),
     ...(isActive === undefined ? {} : { isActive }),
   }
 }
