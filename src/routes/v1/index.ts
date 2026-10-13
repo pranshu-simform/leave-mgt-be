@@ -6,6 +6,7 @@ import { approvalRouter } from '@/modules/approvals'
 import { authPublicRouter, authRouter } from '@/modules/auth'
 import { balanceRouter } from '@/modules/balances'
 import { calendarRouter } from '@/modules/calendar'
+import { dashboardRouter } from '@/modules/dashboard'
 import { holidayRouter } from '@/modules/holidays'
 import { leaveRequestRouter } from '@/modules/leave-requests'
 import { leaveTypeRouter } from '@/modules/leave-types'
@@ -25,3 +26,4 @@ v1Router.use(approvalRouter)
 v1Router.use('/calendar', calendarRouter)
 v1Router.use('/holidays', holidayRouter)
 v1Router.use('/admin', adminRouter)
+v1Router.use('/dashboard', dashboardRouter)
