@@ -12,9 +12,25 @@ const envSchema = z.object({
     .default('false')
     .transform((value) => value === 'true'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  EMAIL_PROVIDER: z.preprocess((value) => value || undefined, z.enum(['smtp']).optional()),
+  EMAIL_FROM: z.string().min(3).default('Leave & Absence <leave-bot@leavepoc.local>'),
+  SMTP_HOST: z.preprocess((value) => value || undefined, z.string().trim().optional()),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.preprocess((value) => value || undefined, z.string().optional()),
+  SMTP_PASS: z.preprocess((value) => value || undefined, z.string().optional()),
 })
 
-const parsed = envSchema.safeParse(process.env)
+const parsed = envSchema
+  .superRefine((value, ctx) => {
+    if (value.EMAIL_PROVIDER === 'smtp' && !value.SMTP_HOST) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMTP_HOST'],
+        message: 'Required when EMAIL_PROVIDER is smtp',
+      })
+    }
+  })
+  .safeParse(process.env)
 
 if (!parsed.success) {
   const problems = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`)

@@ -15,7 +15,7 @@ Express 5, TypeScript 7 (strict, ESM, `moduleResolution: bundler`), Prisma 7 wit
 
 ## Structure
 
-Phases 0 to 11 are applied, plus the backend of Phase 13 (`/admin` leave types, holidays, balance allocation and adjustment, the reconcile report, the user list and the all-requests list). `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types`, `balances`, `leave-requests`, `approvals`, `calendar` and `admin` (a thin HTTP module like `approvals`: HR-only `/admin/*` routes; the logic lives in the owning modules: `balances` allocates, adjusts and reconciles, `users` lists people, `leave-requests` lists every request) modules exist, plus `dashboard` (Phase 18: read-only `GET /dashboard` aggregates, bounded raw SQL, scope from the token). Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
+Phases 0 to 11 are applied, plus the backend of Phase 13 (`/admin` leave types, holidays, balance allocation and adjustment, the reconcile report, the user list and the all-requests list). `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types`, `balances`, `leave-requests`, `approvals`, `calendar`, `admin` (a thin HTTP module like `approvals`: HR-only `/admin/*` routes; the logic lives in the owning modules: `balances` allocates, adjusts and reconciles, `users` lists people, `leave-requests` lists every request), `email` (Phase 16, no routes: emails started after a commit and never awaited; the provider sits behind `EmailProvider` in `providers/`, one layout in `templates/layout/`, one file per email in `templates/`; see `docs/DECISIONS.md` entry 10) modules exist, plus `dashboard` (Phase 18: read-only `GET /dashboard` aggregates, bounded raw SQL, scope from the token). Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
 
 ```
 src/
@@ -24,6 +24,7 @@ src/
   config/           # env.ts (Zod), database.ts, logger.ts
   common/           # constants, errors, middleware, types, utils (jwt, dates, pagination, response, request, error.guards), validators
   modules/<name>/   # constants/ controllers/ repositories/ routes/ schemas/ services/ types/ utils/ (+ index.ts at the module root), see Naming and style
+                    # email/ also has providers/ (EmailProvider implementations) and templates/ (layout/ + one file per email)
   routes/           # index.ts (/api/health + /api/v1), health.routes.ts, v1/index.ts (module routers, auth first)
   prisma/client.ts  # PrismaClient singleton (withTransaction() arrives with the first repository)
   jobs/             # cleanup.job.ts, year allocation
@@ -31,7 +32,7 @@ prisma/             # schema.prisma (generator + datasource), models/<module>.pr
 scripts/            # seed-load.ts (stretch only: 5,000-user query-plan data)
 ```
 
-Modules: auth, users, leave-types, balances, holidays, leave-requests, approvals, calendar, admin, dashboard. A team is the users who share a `manager_id`; there is no teams module or table. Use the `add-module` skill to create one.
+Modules: auth, users, leave-types, balances, holidays, leave-requests, approvals, calendar, admin, dashboard, email. A team is the users who share a `manager_id`; there is no teams module or table. Use the `add-module` skill to create one.
 
 ## API versioning
 

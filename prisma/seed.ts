@@ -45,6 +45,44 @@ const USERS = [
     managerEmail: 'manager@example.com',
     isActive: false,
   },
+  // A second, separate organization on public Mailinator inboxes, for testing real email delivery.
+  {
+    email: 'leavepoc-hr@mailinator.com',
+    name: 'Hana Hart',
+    role: Role.HR_ADMIN,
+    managerEmail: null,
+  },
+  {
+    email: 'leavepoc-manager@mailinator.com',
+    name: 'Mason Marsh',
+    role: Role.MANAGER,
+    managerEmail: 'leavepoc-hr@mailinator.com',
+  },
+  {
+    email: 'leavepoc-manager2@mailinator.com',
+    name: 'Nora Nash',
+    role: Role.MANAGER,
+    managerEmail: 'leavepoc-hr@mailinator.com',
+  },
+  {
+    email: 'leavepoc-employee@mailinator.com',
+    name: 'Ezra Ellis',
+    role: Role.EMPLOYEE,
+    managerEmail: 'leavepoc-manager@mailinator.com',
+  },
+  {
+    email: 'leavepoc-employee2@mailinator.com',
+    name: 'Riya Rao',
+    role: Role.EMPLOYEE,
+    managerEmail: 'leavepoc-manager2@mailinator.com',
+  },
+  {
+    email: 'leavepoc-inactive@mailinator.com',
+    name: 'Ivy Irons',
+    role: Role.EMPLOYEE,
+    managerEmail: 'leavepoc-manager@mailinator.com',
+    isActive: false,
+  },
 ]
 
 const LEAVE_TYPES = [

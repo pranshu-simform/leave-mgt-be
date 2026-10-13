@@ -2,6 +2,7 @@ import { app } from '@/app'
 import { SHUTDOWN_TIMEOUT_MS } from '@/common/constants'
 import { env } from '@/config/env'
 import { logger } from '@/config/logger'
+import { verifyEmailProvider } from '@/modules/email'
 import { prisma } from '@/prisma/client'
 
 process.on('unhandledRejection', (reason) => {
@@ -19,6 +20,8 @@ try {
   logger.fatal({ err }, 'Database is not reachable. Check DATABASE_URL and that Postgres is up.')
   process.exit(1)
 }
+
+verifyEmailProvider()
 
 const server = app.listen(env.PORT, () => {
   logger.info(`API listening on http://localhost:${env.PORT}`)

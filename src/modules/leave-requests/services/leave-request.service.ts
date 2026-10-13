@@ -9,6 +9,13 @@ import { getOverlaps } from '@/modules/calendar'
 import { getWorkingDays } from '@/modules/holidays'
 import { evaluateLeaveRules, getActiveLeaveType } from '@/modules/leave-types'
 import {
+  sendLeaveApprovedEmail,
+  sendLeaveAutoApprovedEmail,
+  sendLeaveCancelledEmail,
+  sendLeaveRejectedEmail,
+  sendLeaveSubmittedEmail,
+} from '@/modules/email'
+import {
   commitApproval,
   explainDecisionMiss,
 } from '@/modules/leave-requests/services/commit-approval.service'
@@ -31,7 +38,7 @@ import type {
   UpdateLeaveRequestInput,
 } from '@/modules/leave-requests/types/leave-request.types'
 import { notFound, toRequestError } from '@/modules/leave-requests/utils/leave-request.errors'
-import { toDto } from '@/modules/leave-requests/utils/leave-request.mappers'
+import { toDto, toLeaveEmailData } from '@/modules/leave-requests/utils/leave-request.mappers'
 import { throwIfInvalid } from '@/modules/leave-requests/utils/leave-request.validation'
 
 // Loads the leave type, then runs every check. Nothing here writes.
@@ -144,6 +151,8 @@ export async function submitLeaveRequest(
   }).catch((err: unknown) => {
     throw toRequestError(err)
   })
+  if (type.requiresApproval) sendLeaveSubmittedEmail(toLeaveEmailData(created))
+  else sendLeaveAutoApprovedEmail(toLeaveEmailData(created))
   return toDto(created)
 }
 
@@ -305,13 +314,16 @@ export async function cancelLeaveRequest(
       fromStatus,
       toStatus: 'CANCELLED',
     })
-    return request
+    return { request, fromStatus }
   })
-  return toDto(cancelled)
+  if (cancelled.fromStatus === 'APPROVED')
+    sendLeaveCancelledEmail(toLeaveEmailData(cancelled.request))
+  return toDto(cancelled.request)
 }
 
 export async function approveLeaveRequest(actor: Approver, id: string): Promise<LeaveRequestDto> {
   const approved = await withTransaction((tx) => commitApproval(tx, id, actor))
+  sendLeaveApprovedEmail(toLeaveEmailData(approved), actor.id)
   return toDto(approved)
 }
 
@@ -334,6 +346,7 @@ export async function rejectLeaveRequest(
     })
     return leaveRequestRepository.findById(tx, id)
   })
+  sendLeaveRejectedEmail(toLeaveEmailData(rejected!), actor.id, reason)
   return toDto(rejected!)
 }
 
@@ -361,5 +374,8 @@ export async function listRequestsForApprover(actor: Approver, query: ApproverQu
 export async function listAllRequests(filters: AdminListFilters, page: number, limit: number) {
   const { skip, take } = toSkipTake(page, limit)
   const { items, total } = await leaveRequestRepository.listAll(prisma, filters, skip, take)
-  return { items: items.map(toDto), pagination: buildPagination(page, limit, total) }
+  return {
+    items: items.map(toDto),
+    pagination: buildPagination(page, limit, total),
+  }
 }
