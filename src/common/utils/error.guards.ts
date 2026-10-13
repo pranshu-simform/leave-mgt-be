@@ -18,3 +18,16 @@ export function postgresError(err: unknown): PostgresErrorInfo | undefined {
     return { code: cause.code, message: cause.message }
   }
 }
+
+export function isUniqueViolation(err: unknown, index?: string): boolean {
+  if (!isRecord(err) || err.code !== 'P2002') return false
+  if (!isRecord(err.meta) || !isRecord(err.meta.driverAdapterError)) return false
+  const cause = err.meta.driverAdapterError.cause
+  if (!isRecord(cause) || cause.kind !== 'UniqueConstraintViolation') return false
+  return index === undefined || (isRecord(cause.constraint) && cause.constraint.index === index)
+}
+
+export function isExclusionViolation(err: unknown, constraint: string): boolean {
+  const pgError = postgresError(err)
+  return pgError?.code === '23P01' && pgError.message.includes(constraint)
+}

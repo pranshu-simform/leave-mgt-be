@@ -45,7 +45,7 @@ CREATE TRIGGER leave_request_events_no_truncate
   BEFORE TRUNCATE ON leave_request_events FOR EACH STATEMENT EXECUTE FUNCTION forbid_mutation();
 ```
 
-Map violations in `common/errors/errorHandler.ts` (today: `23P01` on `leave_requests_no_overlap` → `OVERLAPPING_REQUEST`, 409). Prisma delivers them as `P2039` with the Postgres code and message under `meta.driverAdapterError.cause`; trigger a real violation and inspect the error before writing a new mapping.
+Map violations **in the feature that hits them**, not in `common/errors/errorHandler.ts` (which stays generic): a constant with the constraint name, an error factory in the module's `utils/<name>.errors.ts` using `isUniqueViolation` or `isExclusionViolation` from `common/utils/error.guards.ts`, and a `.catch` in the service (today: `leave-requests` maps `23P01` on `leave_requests_no_overlap` to `OVERLAPPING_REQUEST`, 409; `leave-types` and `holidays` map their unique indexes to `ALREADY_EXISTS`, 409). Prisma delivers a unique violation as `P2002` and an exclusion violation as `P2039`, with the Postgres details under `meta.driverAdapterError.cause`; trigger a real violation and inspect the error before writing the guard.
 
 ## Rules
 

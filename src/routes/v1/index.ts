@@ -1,6 +1,7 @@
 import cookieParser from 'cookie-parser'
 import { Router } from 'express'
 import { authenticate } from '@/common/middleware/auth.middleware'
+import { adminRouter } from '@/modules/admin'
 import { approvalRouter } from '@/modules/approvals'
 import { authPublicRouter, authRouter } from '@/modules/auth'
 import { balanceRouter } from '@/modules/balances'
@@ -23,3 +24,4 @@ v1Router.use('/leave-requests', leaveRequestRouter)
 v1Router.use(approvalRouter)
 v1Router.use('/calendar', calendarRouter)
 v1Router.use('/holidays', holidayRouter)
+v1Router.use('/admin', adminRouter)

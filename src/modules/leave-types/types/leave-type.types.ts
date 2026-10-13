@@ -35,3 +35,31 @@ export type LeaveRuleType = Pick<
   LeaveType,
   'allowRetroactive' | 'minNoticeDays' | 'maxConsecutiveDays' | 'requiresNote'
 >
+
+export interface AdminLeaveTypeDto extends LeaveTypeDto {
+  requiresApproval: boolean
+  isActive: boolean
+}
+
+export interface CreateLeaveTypeData {
+  code: string
+  name: string
+  drawsFromBalance: boolean
+  defaultAllowanceDays: number
+  allowRetroactive: boolean
+  minNoticeDays: number
+  maxConsecutiveDays: number | null
+  requiresNote: boolean
+  requiresApproval: boolean
+}
+
+export interface UpdateLeaveTypeData {
+  name?: string
+  defaultAllowanceDays?: number
+  allowRetroactive?: boolean
+  minNoticeDays?: number
+  maxConsecutiveDays?: number | null
+  requiresNote?: boolean
+  requiresApproval?: boolean
+  isActive?: boolean
+}

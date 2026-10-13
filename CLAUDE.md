@@ -15,7 +15,7 @@ Express 5, TypeScript 7 (strict, ESM, `moduleResolution: bundler`), Prisma 7 wit
 
 ## Structure
 
-Phases 0 to 11 are applied (the backend last changed in Phase 11). `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types`, `balances`, `leave-requests` and `approvals` modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
+Phases 0 to 11 are applied, plus the first half of Phase 13 (`/admin` leave types and holidays). `config/`, `common/` (errors, constants, middleware, types, utils, validators), `routes/`, `prisma/client.ts` and the `auth`, `users`, `holidays`, `leave-types`, `balances`, `leave-requests`, `approvals`, `calendar` and `admin` (a thin HTTP module like `approvals`: HR-only `/admin/*` routes; the logic lives in the owning modules) modules exist. Everything else (the other modules, `jobs/`) is added by the phase that first needs it, with its own tables, error codes and dependencies. See `docs/BACKEND-STRUCTURE.md` for what exists.
 
 ```
 src/
@@ -58,7 +58,7 @@ Modules: auth, users, leave-types, balances, holidays, leave-requests, approvals
 - Response shapes (see `docs/API-RESPONSES.md`): success `{ success: true, message?, data }`, paginated `{ success: true, data: [...], pagination }`, error `{ success: false, error: { code, message, details? } }`. Build bodies only with `ok()`, `paginated()` and `fail()` from `common/utils/response.ts`. Never write `res.json({...})` by hand. Action with nothing to return: `ok(null)`, not 204. The request id is the `X-Request-Id` header, never in the body.
 - Statuses: 400 `VALIDATION_ERROR`, 401 `UNAUTHENTICATED` / `TOKEN_EXPIRED`, 403 `FORBIDDEN` / `SELF_APPROVAL_FORBIDDEN`, 404 `NOT_FOUND`, 409 `ALREADY_DECIDED` / `REQUEST_LOCKED` / `OVERLAPPING_REQUEST` / `VERSION_CONFLICT`, 422 `INSUFFICIENT_BALANCE` and rule violations.
 - Every route uses `validate({ body, query, params })` with a schema from the module's `*.schema.ts`. Schema names are `<action><Feature>Schema`, types are `<Action><Feature>Input = z.infer<…>`.
-- Database constraint errors are mapped to `AppError` in `common/errors/errorHandler.ts`, not in services. Today that is the overlap exclusion constraint (`23P01` → 409 `OVERLAPPING_REQUEST`); Prisma's pg adapter delivers it as `P2039` with the Postgres code under `meta.driverAdapterError.cause`. Add a mapping only when a constraint can be hit by a real request.
+- `common/errors/errorHandler.ts` stays generic: `AppError`, malformed or oversized bodies, and a fallback for any unique violation (409 `ALREADY_EXISTS`, "This record already exists"). A database constraint that a feature wants to explain is handled **in that feature**: a constant with the constraint or index name (`constants/`), an error factory `to<Thing>Error(err)` in `utils/<name>.errors.ts` that uses the generic guards `isUniqueViolation(err, index)` and `isExclusionViolation(err, constraint)` from `common/utils/error.guards.ts`, and a `.catch` in the service around the write that rethrows it (see `leave-requests` for the overlap exclusion constraint, `leave-types` and `holidays` for duplicates). Prisma's pg adapter delivers a unique violation as `P2002` and an exclusion violation as `P2039`, with the details under `meta.driverAdapterError.cause`; trigger a real violation and inspect the error before writing the guard.
 
 ## Data rules
 

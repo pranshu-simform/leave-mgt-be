@@ -29,7 +29,7 @@ import type {
   RequestViolation,
   UpdateLeaveRequestInput,
 } from '@/modules/leave-requests/types/leave-request.types'
-import { notFound } from '@/modules/leave-requests/utils/leave-request.errors'
+import { notFound, toRequestError } from '@/modules/leave-requests/utils/leave-request.errors'
 import { toDto } from '@/modules/leave-requests/utils/leave-request.mappers'
 import { throwIfInvalid } from '@/modules/leave-requests/utils/leave-request.validation'
 
@@ -140,6 +140,8 @@ export async function submitLeaveRequest(
     })
 
     return type.requiresApproval ? request : commitApproval(tx, request.id, null)
+  }).catch((err: unknown) => {
+    throw toRequestError(err)
   })
   return toDto(created)
 }
@@ -255,6 +257,8 @@ export async function updateLeaveRequest(
       },
     })
     return leaveRequestRepository.findById(tx, id)
+  }).catch((err: unknown) => {
+    throw toRequestError(err)
   })
   return toDto(updated!)
 }
