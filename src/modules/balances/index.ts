@@ -7,6 +7,5 @@ export {
   deductBalance,
   findBalance,
   getBalances,
-  reconcileBalances,
   refundBalance,
 } from '@/modules/balances/services/balance.service'

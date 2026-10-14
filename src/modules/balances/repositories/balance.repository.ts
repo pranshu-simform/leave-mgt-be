@@ -1,10 +1,9 @@
 import { isoToDate } from '@/common/utils/dates'
 import type { Db } from '@/prisma/client'
-import { MAX_BALANCES, MAX_DRIFT_ROWS } from '@/modules/balances/constants/balance.constants'
+import { MAX_BALANCES } from '@/modules/balances/constants/balance.constants'
 import type {
   AdjustBalanceData,
   BalanceKey,
-  DriftRow,
   LedgerEntryData,
   NewBalanceData,
 } from '@/modules/balances/types/balance.types'
@@ -95,33 +94,4 @@ export const balanceRepository = {
     }),
 
   addLedgerEntries: (db: Db, data: LedgerEntryData[]) => db.leaveBalanceLedger.createMany({ data }),
-
-  countByYear: (db: Db, year: number) => db.leaveBalance.count({ where: { year } }),
-
-  // Recomputes every balance of a year from its ledger and returns the ones that disagree.
-  // allowance = ALLOCATION + ADJUSTMENT deltas; used = minus the DEDUCT + REFUND deltas.
-  // Read-only, capped at MAX_DRIFT_ROWS; drift_total is the real count of drifting balances.
-  findDrift: (db: Db, year: number) =>
-    db.$queryRaw<DriftRow[]>`
-      WITH computed AS (
-        SELECT b.id, b.user_id, b.leave_type_id, b.allowance, b.used,
-          COALESCE(SUM(l.delta) FILTER (WHERE l.reason IN ('ALLOCATION', 'ADJUSTMENT')), 0)::int
-            AS expected_allowance,
-          (-COALESCE(SUM(l.delta) FILTER (WHERE l.reason IN ('DEDUCT', 'REFUND')), 0))::int
-            AS expected_used
-        FROM leave_balances b
-        LEFT JOIN leave_balance_ledger l ON l.balance_id = b.id
-        WHERE b.year = ${year}::int
-        GROUP BY b.id
-      )
-      SELECT c.id AS balance_id, c.user_id, u.name AS user_name,
-        c.leave_type_id, t.name AS leave_type_name,
-        c.allowance, c.expected_allowance, c.used, c.expected_used,
-        (COUNT(*) OVER ())::int AS drift_total
-      FROM computed c
-      JOIN users u ON u.id = c.user_id
-      JOIN leave_types t ON t.id = c.leave_type_id
-      WHERE c.allowance <> c.expected_allowance OR c.used <> c.expected_used
-      ORDER BY u.name, t.name, c.id
-      LIMIT ${MAX_DRIFT_ROWS}::int`,
 }

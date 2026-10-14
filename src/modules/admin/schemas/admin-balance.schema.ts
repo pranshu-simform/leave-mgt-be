@@ -36,12 +36,3 @@ export const adjustBalanceSchema = z.strictObject({
     .min(1, 'Note is required')
     .max(ADJUST_NOTE_MAX_LENGTH, `Note must be at most ${ADJUST_NOTE_MAX_LENGTH} characters`),
 })
-
-export const reconcileQuerySchema = z.object({
-  year: z.coerce
-    .number('Year must be a number')
-    .int('Year must be a whole number')
-    .min(ADMIN_YEAR_MIN, `Year must be ${ADMIN_YEAR_MIN} or later`)
-    .max(ADMIN_YEAR_MAX, `Year must be ${ADMIN_YEAR_MAX} or earlier`)
-    .default(() => isoYear(todayIso())),
-})
