@@ -11,7 +11,6 @@ import * as userController from '@/modules/admin/controllers/admin-user.controll
 import {
   adjustBalanceSchema,
   allocateBalancesSchema,
-  reconcileQuerySchema,
 } from '@/modules/admin/schemas/admin-balance.schema'
 import {
   createHolidaySchema,
@@ -53,11 +52,6 @@ adminRouter.post(
   '/balances/adjust',
   validate({ body: adjustBalanceSchema }),
   balanceController.adjust,
-)
-adminRouter.get(
-  '/balances/reconcile',
-  validate({ query: reconcileQuerySchema }),
-  balanceController.reconcile,
 )
 
 adminRouter.get('/users', validate({ query: userListQuerySchema }), userController.list)

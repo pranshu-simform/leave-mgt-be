@@ -12,14 +12,13 @@ import type {
   BalanceActor,
   BalanceChange,
   BalanceDto,
-  ReconcileReportDto,
 } from '@/modules/balances/types/balance.types'
 import {
   insufficientBalance,
   isAmountsViolation,
   toDeductError,
 } from '@/modules/balances/utils/balance.errors'
-import { toDriftDto, toNewBalances } from '@/modules/balances/utils/balance.mappers'
+import { toNewBalances } from '@/modules/balances/utils/balance.mappers'
 import { findUserById, findUserInReadScope } from '@/modules/users'
 
 async function allocate(
@@ -185,17 +184,4 @@ export async function adjustBalance(
   const updated = balances.find((balance) => balance.leaveTypeId === change.leaveTypeId)
   if (!updated) throw new AppError(ERROR_CODES.INTERNAL_ERROR, 500, 'The balance was not found')
   return updated
-}
-
-export async function reconcileBalances(year: number): Promise<ReconcileReportDto> {
-  const [rows, checked] = await Promise.all([
-    balanceRepository.findDrift(prisma, year),
-    balanceRepository.countByYear(prisma, year),
-  ])
-  return {
-    year,
-    checked,
-    driftCount: rows[0]?.drift_total ?? 0,
-    drifts: rows.map(toDriftDto),
-  }
 }
