@@ -5,6 +5,7 @@ import type { EventAction, LeaveStatus, Role } from '@/generated/prisma/enums'
 import type { LEAVE_REQUEST_RELATIONS } from '@/modules/leave-requests/constants/leave-request.constants'
 import type {
   createLeaveRequestSchema,
+  previewLeaveRequestSchema,
   historyQuerySchema,
   listLeaveRequestsQuerySchema,
   updateLeaveRequestSchema,
@@ -54,7 +55,12 @@ export interface RequestViolation {
 export interface RequestCheck {
   days: number
   violations: RequestViolation[]
-  balance: { allowance: number; used: number; remaining: number; remainingAfter: number } | null
+  balance: {
+    allowance: number
+    used: number
+    remaining: number
+    remainingAfter: number
+  } | null
 }
 
 export type LeaveRequestRow = Prisma.LeaveRequestGetPayload<{
@@ -132,12 +138,14 @@ export interface RequestInput {
   startDate: string
   endDate: string
   note?: string
+  checkNote?: boolean
 }
 
 export interface CheckInput {
   startDate: string
   endDate: string
   note?: string
+  checkNote?: boolean
 }
 
 export interface EvaluatedRequest {
@@ -152,6 +160,7 @@ export interface ApproverQuery {
 }
 
 export type CreateLeaveRequestInput = z.infer<typeof createLeaveRequestSchema>
+export type PreviewLeaveRequestInput = z.infer<typeof previewLeaveRequestSchema>
 export type UpdateLeaveRequestInput = z.infer<typeof updateLeaveRequestSchema>
 export type HistoryQuery = z.infer<typeof historyQuerySchema>
 export type ListLeaveRequestsQuery = z.infer<typeof listLeaveRequestsQuerySchema>

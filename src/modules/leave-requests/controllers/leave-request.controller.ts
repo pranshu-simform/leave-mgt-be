@@ -3,6 +3,7 @@ import type { IdParam } from '@/common/types/common.types'
 import { ok, paginated } from '@/common/utils/response'
 import type {
   CreateLeaveRequestInput,
+  PreviewLeaveRequestInput,
   HistoryQuery,
   ListLeaveRequestsQuery,
   UpdateLeaveRequestInput,
@@ -10,7 +11,7 @@ import type {
 import * as leaveRequestService from '@/modules/leave-requests/services/leave-request.service'
 
 export async function preview(req: Request, res: Response): Promise<void> {
-  const body = req.validated?.body as CreateLeaveRequestInput
+  const body = req.validated?.body as PreviewLeaveRequestInput
   res.json(ok(await leaveRequestService.previewLeaveRequest(req.user!, body)))
 }
 

@@ -7,7 +7,7 @@ import type {
 
 export function evaluateLeaveRules(
   type: LeaveRuleType,
-  { startDate, days, note, today }: LeaveRuleInput,
+  { startDate, days, note, checkNote = true, today }: LeaveRuleInput,
 ): LeaveRuleViolation[] {
   const violations: LeaveRuleViolation[] = []
   const noticeDays = diffDays(today, startDate)
@@ -36,7 +36,7 @@ export function evaluateLeaveRules(
     })
   }
 
-  if (type.requiresNote && !note?.trim()) {
+  if (checkNote && type.requiresNote && !note?.trim()) {
     violations.push({
       code: 'NOTE_REQUIRED',
       field: 'note',

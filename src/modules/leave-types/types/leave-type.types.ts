@@ -27,6 +27,7 @@ export interface LeaveRuleInput {
   startDate: string
   days: number
   note?: string | null
+  checkNote?: boolean
   today: string
 }
 

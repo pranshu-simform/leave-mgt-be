@@ -26,6 +26,7 @@ import type {
   ApproverQuery,
   CheckInput,
   CreateLeaveRequestInput,
+  PreviewLeaveRequestInput,
   EvaluatedRequest,
   HistoryQuery,
   LeaveRequestActor,
@@ -91,6 +92,7 @@ async function checkAgainstType(
     startDate: input.startDate,
     days,
     note: input.note,
+    checkNote: input.checkNote,
     today: todayIso(),
   })
 
@@ -115,9 +117,9 @@ async function checkAgainstType(
 
 export async function previewLeaveRequest(
   actor: LeaveRequestActor,
-  input: CreateLeaveRequestInput,
+  input: PreviewLeaveRequestInput,
 ) {
-  const { check } = await evaluateRequest(actor.id, input)
+  const { check } = await evaluateRequest(actor.id, { ...input, checkNote: false })
 
   const overlaps = check.days > 0 ? await getOverlaps(actor, input.startDate, input.endDate) : null
   return { ...check, overlaps }

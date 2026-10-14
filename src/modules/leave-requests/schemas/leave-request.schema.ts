@@ -19,13 +19,18 @@ const endNotBeforeStart = {
   when: (payload: { issues: readonly unknown[] }) => payload.issues.length === 0,
 }
 
+const requestFields = {
+  leaveTypeId: z.uuid('Invalid leave type'),
+  startDate: isoDateSchema,
+  endDate: isoDateSchema,
+}
+
 export const createLeaveRequestSchema = z
-  .object({
-    leaveTypeId: z.uuid('Invalid leave type'),
-    startDate: isoDateSchema,
-    endDate: isoDateSchema,
-    note,
-  })
+  .object({ ...requestFields, note })
+  .refine((value) => value.startDate <= value.endDate, endNotBeforeStart)
+
+export const previewLeaveRequestSchema = z
+  .object(requestFields)
   .refine((value) => value.startDate <= value.endDate, endNotBeforeStart)
 
 export const updateLeaveRequestSchema = z

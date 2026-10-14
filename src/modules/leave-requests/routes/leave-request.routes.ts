@@ -4,6 +4,7 @@ import { idParamSchema } from '@/common/validators/common.schema'
 import * as leaveRequestController from '@/modules/leave-requests/controllers/leave-request.controller'
 import {
   createLeaveRequestSchema,
+  previewLeaveRequestSchema,
   historyQuerySchema,
   listLeaveRequestsQuerySchema,
   updateLeaveRequestSchema,
@@ -13,7 +14,7 @@ export const leaveRequestRouter = Router()
 
 leaveRequestRouter.post(
   '/preview',
-  validate({ body: createLeaveRequestSchema }),
+  validate({ body: previewLeaveRequestSchema }),
   leaveRequestController.preview,
 )
 leaveRequestRouter.post(
