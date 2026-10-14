@@ -33,7 +33,6 @@ export const updateLeaveRequestSchema = z
     startDate: isoDateSchema,
     endDate: isoDateSchema,
     note,
-    version: z.number('Version is required').int().min(1),
   })
   .refine((value) => value.startDate <= value.endDate, endNotBeforeStart)
 

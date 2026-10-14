@@ -19,7 +19,6 @@ const result = await db.leaveRequest.updateMany({
     status: 'APPROVED',
     decidedBy: actor.id,
     decidedAt: new Date(),
-    version: { increment: 1 },
   },
 })
 if (result.count !== 1) await explainDecisionMiss(db, id, actor) // 403 own request, 404 out of scope, 409 ALREADY_DECIDED

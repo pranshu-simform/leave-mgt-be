@@ -32,7 +32,6 @@ export function toDto(row: LeaveRequestRow): LeaveRequestDto {
     days: row.days,
     note: row.note,
     status: row.status,
-    version: row.version,
     requester: { id: row.user.id, name: row.user.name },
     decidedAt: row.decidedAt ? row.decidedAt.toISOString() : null,
     createdAt: row.createdAt.toISOString(),

@@ -203,17 +203,10 @@ export async function getRequestHistory(actor: LeaveRequestActor, id: string, qu
 async function explainNoMatch(db: Db, id: string, userId: string): Promise<never> {
   const current = await leaveRequestRepository.findOwned(db, id, userId)
   if (!current) throw notFound()
-  if (current.status !== 'PENDING') {
-    throw new AppError(
-      ERROR_CODES.REQUEST_LOCKED,
-      409,
-      `This request is ${current.status.toLowerCase()} and can no longer be changed`,
-    )
-  }
   throw new AppError(
-    ERROR_CODES.VERSION_CONFLICT,
+    ERROR_CODES.REQUEST_LOCKED,
     409,
-    'This request was changed elsewhere. Reload it and try again',
+    `This request is ${current.status.toLowerCase()} and can no longer be changed`,
   )
 }
 
@@ -235,7 +228,7 @@ export async function updateLeaveRequest(
   const updated = await withTransaction(async (tx) => {
     const changed = await leaveRequestRepository.updateIfPending(
       tx,
-      { id, userId: actor.id, version: input.version },
+      { id, userId: actor.id },
       {
         startDate: input.startDate,
         endDate: input.endDate,

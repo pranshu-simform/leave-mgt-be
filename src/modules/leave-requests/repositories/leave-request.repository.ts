@@ -103,7 +103,6 @@ export const leaveRequestRepository = {
         ...data,
         startDate: isoToDate(data.startDate),
         endDate: isoToDate(data.endDate),
-        version: { increment: 1 },
       },
     })
     return result.count === 1
@@ -112,7 +111,7 @@ export const leaveRequestRepository = {
   cancelIfPending: async (db: Db, where: OwnedRequestKey) => {
     const result = await db.leaveRequest.updateMany({
       where: { ...where, status: 'PENDING' },
-      data: { status: 'CANCELLED', version: { increment: 1 } },
+      data: { status: 'CANCELLED' },
     })
     return result.count === 1
   },
@@ -154,7 +153,6 @@ export const leaveRequestRepository = {
         status,
         decidedBy: actor.id,
         decidedAt: new Date(),
-        version: { increment: 1 },
       },
     })
     return result.count === 1
@@ -166,7 +164,6 @@ export const leaveRequestRepository = {
       data: {
         status: 'APPROVED',
         decidedAt: new Date(),
-        version: { increment: 1 },
       },
     })
     return result.count === 1
@@ -179,7 +176,7 @@ export const leaveRequestRepository = {
         status: 'APPROVED',
         startDate: { gte: isoToDate(today) },
       },
-      data: { status: 'CANCELLED', version: { increment: 1 } },
+      data: { status: 'CANCELLED' },
     })
     return result.count === 1
   },

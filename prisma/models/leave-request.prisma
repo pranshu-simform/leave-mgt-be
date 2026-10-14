@@ -23,7 +23,6 @@ model LeaveRequest {
   days        Int
   note        String?
   status      LeaveStatus @default(PENDING)
-  version     Int         @default(1)
   decidedBy   String?     @map("decided_by") @db.Uuid
   decidedAt   DateTime?   @map("decided_at") @db.Timestamptz(3)
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)

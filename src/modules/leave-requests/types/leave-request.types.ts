@@ -18,7 +18,6 @@ export interface LeaveRequestDto {
   days: number
   note: string | null
   status: LeaveStatus
-  version: number
   requester: { id: string; name: string }
   decidedAt: string | null
   createdAt: string
@@ -112,7 +111,6 @@ export interface CreateEventData {
 export interface UpdateWhere {
   id: string
   userId: string
-  version: number
 }
 
 export interface UpdateLeaveRequestData {
