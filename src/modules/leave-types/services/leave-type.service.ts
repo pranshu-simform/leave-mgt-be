@@ -3,6 +3,7 @@ import { ERROR_CODES } from '@/common/errors/errorCodes'
 import { isoYear, todayIso } from '@/common/utils/dates'
 import { prisma, withTransaction } from '@/prisma/client'
 import { allocateYear } from '@/modules/balances'
+import { CREATE_TYPE_TIMEOUT_MS } from '@/modules/leave-types/constants/leave-type.constants'
 import { leaveTypeRepository } from '@/modules/leave-types/repositories/leave-type.repository'
 import type {
   AdminLeaveTypeDto,
@@ -39,11 +40,14 @@ function noAllowanceWithoutBalance(): AppError {
 export async function createLeaveType(data: CreateLeaveTypeData): Promise<AdminLeaveTypeDto> {
   if (!data.drawsFromBalance && data.defaultAllowanceDays !== 0) throw noAllowanceWithoutBalance()
 
-  const created = await withTransaction(async (tx) => {
-    const type = await leaveTypeRepository.create(tx, data)
-    if (type.drawsFromBalance) await allocateYear(isoYear(todayIso()), tx)
-    return type
-  }).catch((err: unknown) => {
+  const created = await withTransaction(
+    async (tx) => {
+      const type = await leaveTypeRepository.create(tx, data)
+      if (type.drawsFromBalance) await allocateYear(isoYear(todayIso()), tx)
+      return type
+    },
+    { timeout: CREATE_TYPE_TIMEOUT_MS },
+  ).catch((err: unknown) => {
     throw toLeaveTypeError(err)
   })
   return toAdminLeaveTypeDto(created)

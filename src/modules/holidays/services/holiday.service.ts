@@ -14,6 +14,10 @@ export async function getWorkingDays(startDate: string, endDate: string): Promis
   return countWorkingDays(startDate, endDate, new Set(holidays))
 }
 
+export function getHolidayDates(from: string, to: string): Promise<string[]> {
+  return holidayRepository.findDatesBetween(prisma, from, to)
+}
+
 // The public holidays of one month: a window of at most 31 days, so the list is bounded.
 export function listHolidays(month: string) {
   const { from, to } = monthBounds(month)

@@ -3,38 +3,37 @@ import type { Db } from '@/prisma/client'
 import { MAX_BALANCES, MAX_DRIFT_ROWS } from '@/modules/balances/constants/balance.constants'
 import type {
   AdjustBalanceData,
-  BalanceIdRow,
   BalanceKey,
   DriftRow,
   LedgerEntryData,
+  NewBalanceData,
 } from '@/modules/balances/types/balance.types'
 
 export const balanceRepository = {
   deduct: async (db: Db, { userId, leaveTypeId, year, days }: BalanceKey) => {
-    const rows = await db.$queryRaw<BalanceIdRow[]>`
-      UPDATE leave_balances SET used = used + ${days}::int, updated_at = now()
-      WHERE user_id = ${userId}::uuid AND leave_type_id = ${leaveTypeId}::uuid
-        AND year = ${year}::int AND used + ${days}::int <= allowance
-      RETURNING id`
+    const rows = await db.leaveBalance.updateManyAndReturn({
+      where: { userId, leaveTypeId, year },
+      data: { used: { increment: days } },
+      select: { id: true },
+    })
     return rows[0]?.id ?? null
   },
 
   refund: async (db: Db, { userId, leaveTypeId, year, days }: BalanceKey) => {
-    const rows = await db.$queryRaw<BalanceIdRow[]>`
-      UPDATE leave_balances SET used = used - ${days}::int, updated_at = now()
-      WHERE user_id = ${userId}::uuid AND leave_type_id = ${leaveTypeId}::uuid
-        AND year = ${year}::int AND used - ${days}::int >= 0
-      RETURNING id`
+    const rows = await db.leaveBalance.updateManyAndReturn({
+      where: { userId, leaveTypeId, year, used: { gte: days } },
+      data: { used: { decrement: days } },
+      select: { id: true },
+    })
     return rows[0]?.id ?? null
   },
 
-  // Moves the allowance, never below what is already used. The check is part of the UPDATE.
   adjust: async (db: Db, { userId, leaveTypeId, year, delta }: AdjustBalanceData) => {
-    const rows = await db.$queryRaw<BalanceIdRow[]>`
-      UPDATE leave_balances SET allowance = allowance + ${delta}::int, updated_at = now()
-      WHERE user_id = ${userId}::uuid AND leave_type_id = ${leaveTypeId}::uuid
-        AND year = ${year}::int AND allowance + ${delta}::int >= used
-      RETURNING id`
+    const rows = await db.leaveBalance.updateManyAndReturn({
+      where: { userId, leaveTypeId, year },
+      data: { allowance: { increment: delta } },
+      select: { id: true },
+    })
     return rows[0]?.id ?? null
   },
 
@@ -69,30 +68,33 @@ export const balanceRepository = {
       take: MAX_BALANCES,
     }),
 
-  // One statement: a balance for every active user x active balance-drawing leave type, and an
-  // ALLOCATION ledger row only for the balances this call actually inserted. A rerun, or a
-  // concurrent run, inserts nothing twice because of the unique key and ON CONFLICT DO NOTHING.
+  findBalanceTypes: (db: Db) =>
+    db.leaveType.findMany({
+      where: { isActive: true, drawsFromBalance: true },
+      select: { id: true, defaultAllowanceDays: true },
+      orderBy: { id: 'asc' },
+      take: MAX_BALANCES,
+    }),
 
-  allocateYear: (
-    db: Db,
-    year: number,
-    actorId: string | null,
-    userId: string | null = null,
-  ): Promise<number> =>
-    db.$executeRaw`
-      WITH inserted AS (
-        INSERT INTO leave_balances (id, user_id, leave_type_id, year, allowance, used, created_at, updated_at)
-        SELECT gen_random_uuid(), u.id, t.id, ${year}::int, t.default_allowance_days, 0, now(), now()
-        FROM users u
-        CROSS JOIN leave_types t
-        WHERE u.is_active AND t.is_active AND t.draws_from_balance
-          AND (${userId}::uuid IS NULL OR u.id = ${userId}::uuid)
-        ON CONFLICT (user_id, leave_type_id, year) DO NOTHING
-        RETURNING id, allowance
-      )
-      INSERT INTO leave_balance_ledger (id, balance_id, delta, reason, actor_id, created_at)
-      SELECT gen_random_uuid(), id, allowance, 'ALLOCATION', ${actorId}::uuid, now()
-      FROM inserted`,
+  findActiveUserIds: (db: Db, take: number, after: string | null, userId: string | null) =>
+    db.user.findMany({
+      where: {
+        isActive: true,
+        id: { equals: userId ?? undefined, gt: after ?? undefined },
+      },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+      take,
+    }),
+
+  createBalances: (db: Db, data: NewBalanceData[]) =>
+    db.leaveBalance.createManyAndReturn({
+      data,
+      skipDuplicates: true,
+      select: { id: true, allowance: true },
+    }),
+
+  addLedgerEntries: (db: Db, data: LedgerEntryData[]) => db.leaveBalanceLedger.createMany({ data }),
 
   countByYear: (db: Db, year: number) => db.leaveBalance.count({ where: { year } }),
 

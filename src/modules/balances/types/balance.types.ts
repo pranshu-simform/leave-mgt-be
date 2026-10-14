@@ -41,6 +41,13 @@ export interface AdjustBalanceData {
   note: string
 }
 
+export interface NewBalanceData {
+  userId: string
+  leaveTypeId: string
+  year: number
+  allowance: number
+}
+
 export interface AllocationResult {
   year: number
   created: number
@@ -75,10 +82,6 @@ export interface ReconcileReportDto {
   checked: number
   driftCount: number
   drifts: DriftDto[]
-}
-
-export interface BalanceIdRow {
-  id: string
 }
 
 export interface BalanceActor {

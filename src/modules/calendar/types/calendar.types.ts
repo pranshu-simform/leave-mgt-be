@@ -1,5 +1,10 @@
 import type { z } from 'zod'
+import type { Prisma } from '@/generated/prisma/client'
 import type { Role } from '@/generated/prisma/enums'
+import type {
+  CALENDAR_REQUEST_SELECT,
+  TEAM_SELECT,
+} from '@/modules/calendar/constants/calendar.constants'
 import type {
   calendarQuerySchema,
   summaryQuerySchema,
@@ -38,22 +43,11 @@ export interface TeamDto {
   teamSize: number
 }
 
-export interface AbsenceRow {
-  requestId: string
-  userId: string
-  name: string
-  typeId: string
-  typeName: string
-  startDate: string
-  endDate: string
-  status: CalendarStatus
-}
+export type CalendarRequestRow = Prisma.LeaveRequestGetPayload<{
+  select: typeof CALENDAR_REQUEST_SELECT
+}>
 
-export interface TeamRow {
-  managerId: string
-  managerName: string
-  teamSize: number
-}
+export type TeamRow = Prisma.UserGetPayload<{ select: typeof TEAM_SELECT }>
 
 export interface SummaryRow {
   date: string
@@ -81,14 +75,6 @@ export interface OverlapKey extends DateWindow {
 
 export interface SummaryFilter extends DateWindow {
   managerId: string | null
-}
-
-export interface PeakRow {
-  peak: number
-}
-
-export interface SizeRow {
-  size: number
 }
 
 export interface TotalRow {

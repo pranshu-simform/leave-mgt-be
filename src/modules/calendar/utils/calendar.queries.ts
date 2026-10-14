@@ -1,12 +1,19 @@
 import { Prisma } from '@/generated/prisma/client'
+import { isoToDate } from '@/common/utils/dates'
 import type { CalendarFilter, DateWindow } from '@/modules/calendar/types/calendar.types'
 
-export function calendarWhere({ managerId, status, from, to }: CalendarFilter) {
-  return Prisma.sql`u.is_active
-    ${managerId ? Prisma.sql`AND u.manager_id = ${managerId}::uuid` : Prisma.empty}
-    AND r.status IN ('PENDING', 'APPROVED')
-    ${status ? Prisma.sql`AND r.status = ${status}::"LeaveStatus"` : Prisma.empty}
-    AND daterange(r.start_date, r.end_date, '[]') && daterange(${from}::date, ${to}::date, '[]')`
+export function calendarRequestWhere({
+  managerId,
+  status,
+  from,
+  to,
+}: CalendarFilter): Prisma.LeaveRequestWhereInput {
+  return {
+    status: status ?? { in: ['PENDING', 'APPROVED'] },
+    startDate: { lte: isoToDate(to) },
+    endDate: { gte: isoToDate(from) },
+    user: { isActive: true, ...(managerId ? { managerId } : {}) },
+  }
 }
 
 export function weekdays({ from, to }: DateWindow) {

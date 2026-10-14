@@ -31,3 +31,8 @@ export function isExclusionViolation(err: unknown, constraint: string): boolean 
   const pgError = postgresError(err)
   return pgError?.code === '23P01' && pgError.message.includes(constraint)
 }
+
+export function isCheckViolation(err: unknown, constraint: string): boolean {
+  const pgError = postgresError(err)
+  return pgError?.code === '23514' && pgError.message.includes(constraint)
+}
