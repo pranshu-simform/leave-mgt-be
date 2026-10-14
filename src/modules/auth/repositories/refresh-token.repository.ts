@@ -20,12 +20,6 @@ export const refreshTokenRepository = {
       data: { revokedAt: now },
     }),
 
-  revokeFamily: (db: Db, familyId: string, now: Date) =>
-    db.refreshToken.updateMany({
-      where: { familyId, revokedAt: null },
-      data: { revokedAt: now },
-    }),
-
   revokeAllForUser: (db: Db, userId: string, now: Date) =>
     db.refreshToken.updateMany({
       where: { userId, revokedAt: null },

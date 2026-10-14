@@ -72,7 +72,7 @@ Modules: auth, users, leave-types, balances, holidays, leave-requests, approvals
 
 ## Auth
 
-- `access_token` (15 min HS256 JWT, `jsonwebtoken`) and `refresh_token` (opaque, SHA-256 hashed in the DB, rotated, reuse revokes the family) are httpOnly cookies. A Bearer header is accepted as a fallback for `curl`.
+- `access_token` (15 min HS256 JWT, `jsonwebtoken`) and `refresh_token` (opaque, SHA-256 hashed in the DB, rotated, reuse revokes all of the person's refresh tokens) are httpOnly cookies. A Bearer header is accepted as a fallback for `curl`.
 - `authenticate` loads the user per request to honor `is_active` and role changes. It is mounted once in `routes/v1/index.ts`; register new module routers below it.
 - Passwords use `bcryptjs`. Never log tokens, hashes or passwords.
 
